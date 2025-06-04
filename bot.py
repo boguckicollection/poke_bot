@@ -17,6 +17,12 @@ USD_PLN = 4.00
 def usd_to_pln(usd):
     return usd * USD_PLN if usd else 0
 
+# --- parametry ekonomii ---
+START_MONEY = 100
+BOOSTER_PRICE = 100
+DAILY_AMOUNT = 50
+DAILY_COOLDOWN = 24 * 3600
+
 load_dotenv()
 
 USERS_FILE = "users.json"
@@ -25,6 +31,16 @@ DISCORD_TOKEN = os.environ["BOT_TOKEN"]
 POKETCG_API_KEY = os.environ["POKETCG_API_KEY"]
 DROP_CHANNEL_ID = 1374695570182246440
 STARTIT_BOT_ID = 572906387382861835
+# Kanał do ogłaszania aktualizacji sklepu
+SHOP_CHANNEL_ID = DROP_CHANNEL_ID
+
+# Przedmioty dostępne w sklepie
+ITEMS = {
+    "rare_boost": {"name": "Rare Boost", "price": 200},
+}
+
+# Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
+carts = {}
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -55,17 +71,184 @@ async def fetch_and_save_sets():
         async with session.get(url) as response:
             if response.status != 200:
                 print(f"❌ Błąd pobierania zestawów: {response.status}")
-                return
+                return []
             data = await response.json()
             sets = data.get("data", [])
             filtered_sets = sorted(
                 [s for s in sets if s.get("ptcgoCode")],
                 key=lambda s: s.get("releaseDate", "2000-01-01"),
-                reverse=True
+                reverse=True,
             )
-            with open(SETS_FILE, "w") as f:
-                json.dump(filtered_sets, f, indent=4)
-            print(f"✅ Zapisano {len(filtered_sets)} zestawów do sets.json")
+            try:
+                with open(SETS_FILE, "r") as f:
+                    existing = json.load(f)
+            except FileNotFoundError:
+                existing = []
+            existing_ids = {s["id"] for s in existing}
+            new_sets = [s for s in filtered_sets if s["id"] not in existing_ids]
+            if new_sets:
+                with open(SETS_FILE, "w") as f:
+                    json.dump(filtered_sets, f, indent=4)
+                print(f"✅ Dodano {len(new_sets)} nowych setów")
+            return new_sets
+
+def compute_cart_total(cart):
+    total = sum(q * BOOSTER_PRICE for q in cart.get("boosters", {}).values())
+    total += sum(q * ITEMS[i]["price"] for i, q in cart.get("items", {}).items())
+    return total
+
+def build_shop_embed(user_id):
+    sets = get_all_sets()
+    embed = discord.Embed(title="Sklep", color=discord.Color.gold())
+    boosters_desc = []
+    for s in sets[:10]:
+        boosters_desc.append(f"`{s['ptcgoCode']}` {s['name']} - {BOOSTER_PRICE} monet")
+    embed.add_field(name="Boostery", value="\n".join(boosters_desc) or "Brak", inline=False)
+    items_desc = [f"{info['name']} - {info['price']} monet" for info in ITEMS.values()]
+    embed.add_field(name="Itemy", value="\n".join(items_desc) or "Brak", inline=False)
+    cart = carts.get(user_id)
+    if cart and (cart.get("boosters") or cart.get("items")):
+        lines = []
+        for sid, q in cart.get("boosters", {}).items():
+            name = next((s['name'] for s in sets if s['id']==sid), sid)
+            lines.append(f"{name} x{q}")
+        for iid, q in cart.get("items", {}).items():
+            lines.append(f"{ITEMS[iid]['name']} x{q}")
+        total = compute_cart_total(cart)
+        lines.append(f"**Razem: {total} monet**")
+        embed.add_field(name="Koszyk", value="\n".join(lines), inline=False)
+    return embed
+
+class QuantityModal(Modal):
+    def __init__(self, callback):
+        super().__init__(title="Podaj ilość")
+        self.callback_fn = callback
+        self.qty = TextInput(label="Ilość", default="1")
+        self.add_item(self.qty)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            qty = max(1, int(self.qty.value))
+        except ValueError:
+            qty = 1
+        await self.callback_fn(interaction, qty)
+
+class ShopView(View):
+    def __init__(self, user_id):
+        super().__init__(timeout=180)
+        self.user_id = str(user_id)
+        self.message = None
+        self.add_item(self.AddBoosterButton(self))
+        self.add_item(self.AddItemButton(self))
+        self.add_item(self.FinalizeButton(self))
+        self.add_item(self.ClearButton(self))
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return str(interaction.user.id) == self.user_id
+
+    async def update(self):
+        if self.message:
+            embed = build_shop_embed(self.user_id)
+            await self.message.edit(embed=embed, view=self)
+
+    class AddBoosterButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="Dodaj booster", style=discord.ButtonStyle.primary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            sets = get_all_sets()
+            options = [discord.SelectOption(label=s['name'], value=s['id']) for s in sets[:25]]
+
+            class BoosterSelectView(View):
+                def __init__(self, parent):
+                    super().__init__(timeout=60)
+                    self.parent = parent
+
+                @select(placeholder="Wybierz booster", options=options)
+                async def select_cb(self, i2: discord.Interaction, select: discord.ui.Select):
+                    set_id = select.values[0]
+                    set_name = next((s['name'] for s in sets if s['id']==set_id), set_id)
+
+                    async def after_qty(i3, qty):
+                        cart = carts.setdefault(self.parent.parent.user_id, {"boosters": {}, "items": {}})
+                        cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
+                        await i3.response.send_message(f"Dodano {qty}x {set_name}", ephemeral=True)
+                        await self.parent.parent.update()
+
+                    modal = QuantityModal(after_qty)
+                    await i2.response.send_modal(modal)
+
+            await interaction.response.send_message(view=BoosterSelectView(self), ephemeral=True)
+
+    class AddItemButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="Dodaj item", style=discord.ButtonStyle.primary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            options = [discord.SelectOption(label=info['name'], value=iid) for iid, info in ITEMS.items()]
+
+            class ItemSelectView(View):
+                def __init__(self, parent):
+                    super().__init__(timeout=60)
+                    self.parent = parent
+
+                @select(placeholder="Wybierz item", options=options)
+                async def select_cb(self, i2: discord.Interaction, select: discord.ui.Select):
+                    item_id = select.values[0]
+                    item_name = ITEMS[item_id]['name']
+
+                    async def after_qty(i3, qty):
+                        cart = carts.setdefault(self.parent.parent.user_id, {"boosters": {}, "items": {}})
+                        cart['items'][item_id] = cart['items'].get(item_id, 0) + qty
+                        await i3.response.send_message(f"Dodano {qty}x {item_name}", ephemeral=True)
+                        await self.parent.parent.update()
+
+                    modal = QuantityModal(after_qty)
+                    await i2.response.send_modal(modal)
+
+            await interaction.response.send_message(view=ItemSelectView(self), ephemeral=True)
+
+    class FinalizeButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="Kup", style=discord.ButtonStyle.success)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            users = load_users()
+            uid = self.parent.user_id
+            if uid not in users:
+                await interaction.response.send_message("📭 Nie masz konta.", ephemeral=True)
+                return
+            cart = carts.get(uid)
+            if not cart or (not cart.get('boosters') and not cart.get('items')):
+                await interaction.response.send_message("Koszyk jest pusty", ephemeral=True)
+                return
+            total = compute_cart_total(cart)
+            if users[uid].get('money', 0) < total:
+                await interaction.response.send_message("❌ Za mało monet", ephemeral=True)
+                return
+            users[uid]['money'] -= total
+            for sid, q in cart.get('boosters', {}).items():
+                users[uid]['boosters'].extend([sid]*q)
+            for iid, q in cart.get('items', {}).items():
+                if iid == 'rare_boost':
+                    users[uid]['rare_boost'] = users[uid].get('rare_boost', 0) + q
+            save_users(users)
+            carts.pop(uid, None)
+            await self.parent.update()
+            await interaction.response.send_message(f"✅ Zakupiono za {total} monet", ephemeral=True)
+
+    class ClearButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="Wyczyść koszyk", style=discord.ButtonStyle.danger)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            carts.pop(self.parent.user_id, None)
+            await self.parent.update()
+            await interaction.response.send_message("Koszyk wyczyszczony", ephemeral=True)
 
 class MyClient(discord.Client):
     def __init__(self):
@@ -77,7 +260,19 @@ class MyClient(discord.Client):
             await self.tree.sync()
             self._synced = True
         await fetch_and_save_sets()
+        self.loop.create_task(self.shop_update_loop())
         print(f"✅ Zalogowano jako {self.user} (ID: {self.user.id})")
+
+    async def shop_update_loop(self):
+        await self.wait_until_ready()
+        while not self.is_closed():
+            new_sets = await fetch_and_save_sets()
+            if new_sets:
+                channel = self.get_channel(SHOP_CHANNEL_ID)
+                if channel:
+                    names = ", ".join(s["name"] for s in new_sets)
+                    await channel.send(f"🆕 Nowe sety w sklepie: {names}")
+            await asyncio.sleep(24 * 3600)
 
 client = MyClient()
 
@@ -202,6 +397,8 @@ class CollectionMainView(View):
         boost_count = user.get("rare_boost", 0)
         if boost_count > 0:
             embed.add_field(name="Rare Boosty do użycia", value=f"{boost_count} szt.", inline=False)
+        money = user.get("money", 0)
+        embed.add_field(name="💰 Saldo", value=f"{money} monet", inline=False)
         return embed
     
     class ViewCardsButton(Button):
@@ -490,6 +687,27 @@ class CardRevealView(View):
                     embed=None, view=AfterBoosterView()
                 )
 
+# --- KOMENDA START ---
+@client.tree.command(name="start", description="Utwórz konto w grze")
+async def start_cmd(interaction: discord.Interaction):
+    users = load_users()
+    uid = str(interaction.user.id)
+    if uid in users:
+        await interaction.response.send_message("Masz już konto!", ephemeral=True)
+        return
+    users[uid] = {
+        "username": interaction.user.name,
+        "boosters": [],
+        "cards": [],
+        "rare_boost": 0,
+        "money": START_MONEY,
+        "last_daily": 0,
+    }
+    save_users(users)
+    await interaction.response.send_message(
+        f"✅ Utworzono konto! Otrzymujesz {START_MONEY} monet.", ephemeral=True
+    )
+
 # --- KOMENDA Otwórz ---
 @client.tree.command(name="otworz", description="Otwórz booster i zobacz karty jedna po drugiej!")
 async def otworz(interaction: discord.Interaction):
@@ -550,6 +768,80 @@ async def kolekcja(interaction: discord.Interaction):
     view = CollectionMainView(user, boosters_counter, all_sets)
     embed = await view.build_summary_embed()
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+# --- KOMENDA SALDO ---
+@client.tree.command(name="saldo", description="Sprawdź ilość posiadanych monet")
+async def saldo(interaction: discord.Interaction):
+    users = load_users()
+    uid = str(interaction.user.id)
+    if uid not in users:
+        await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
+        return
+    money = users[uid].get("money", 0)
+    await interaction.response.send_message(f"💰 Twoje saldo: {money} monet", ephemeral=True)
+
+# --- KOMENDA DAILY ---
+@client.tree.command(name="daily", description="Odbierz dzienną nagrodę monet")
+async def daily(interaction: discord.Interaction):
+    users = load_users()
+    uid = str(interaction.user.id)
+    if uid not in users:
+        await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
+        return
+    now = datetime.datetime.utcnow().timestamp()
+    last = users[uid].get("last_daily", 0)
+    if now - last < DAILY_COOLDOWN:
+        remaining = int(DAILY_COOLDOWN - (now - last))
+        h = remaining // 3600
+        m = (remaining % 3600) // 60
+        s = remaining % 60
+        await interaction.response.send_message(
+            f"⌛ Nagrodę możesz odebrać za {h}h {m}m {s}s.", ephemeral=True
+        )
+        return
+    users[uid]["money"] = users[uid].get("money", 0) + DAILY_AMOUNT
+    users[uid]["last_daily"] = now
+    save_users(users)
+    await interaction.response.send_message(
+        f"✅ Otrzymujesz {DAILY_AMOUNT} monet!", ephemeral=True
+    )
+
+# --- KOMENDA KUP BOOSTER ---
+@client.tree.command(name="kup_booster", description="Kup booster za monety")
+@app_commands.describe(kod="Kod PTCGO lub ID zestawu")
+async def kup_booster(interaction: discord.Interaction, kod: str):
+    users = load_users()
+    uid = str(interaction.user.id)
+    if uid not in users:
+        await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
+        return
+    sets = get_all_sets()
+    target = next((s for s in sets if s.get("id") == kod.lower() or s.get("ptcgoCode", "").lower() == kod.lower()), None)
+    if not target:
+        await interaction.response.send_message("❌ Nie znaleziono takiego zestawu.", ephemeral=True)
+        return
+    if users[uid].get("money", 0) < BOOSTER_PRICE:
+        await interaction.response.send_message("❌ Nie masz wystarczającej ilości monet.", ephemeral=True)
+        return
+    users[uid]["money"] -= BOOSTER_PRICE
+    users[uid]["boosters"].append(target["id"])
+    save_users(users)
+    await interaction.response.send_message(
+        f"✅ Kupiono booster {target['name']}!", ephemeral=True
+    )
+
+# --- KOMENDA SKLEP ---
+@client.tree.command(name="sklep", description="Wyświetl sklep i zarządzaj koszykiem")
+async def sklep(interaction: discord.Interaction):
+    users = load_users()
+    uid = str(interaction.user.id)
+    if uid not in users:
+        await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
+        return
+    embed = build_shop_embed(uid)
+    view = ShopView(uid)
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    view.message = await interaction.original_response()
 
 # --- KOMENDA GIVEAWAY ---
 @client.tree.command(name="giveaway", description="Utwórz nowe losowanie boosterów")
