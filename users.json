@@ -1,0 +1,2607 @@
+{
+    "277459089485725697": {
+        "username": "grzesiekde",
+        "boosters": [
+            "sv7",
+            "sv7",
+            "sv7"
+        ],
+        "cards": [
+            {
+                "id": "sv8pt5-111",
+                "name": "Haban Berry",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/111.png"
+            },
+            {
+                "id": "sv8pt5-69",
+                "name": "Duraludon",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/69.png"
+            },
+            {
+                "id": "sv8pt5-100",
+                "name": "Briar",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/100.png"
+            },
+            {
+                "id": "sv8pt5-2",
+                "name": "Exeggutor",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/2.png"
+            },
+            {
+                "id": "sv8pt5-115",
+                "name": "Larry's Skill",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/115.png"
+            },
+            {
+                "id": "sv8pt5-102",
+                "name": "Bug Catching Set",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/102.png"
+            },
+            {
+                "id": "sv8pt5-1",
+                "name": "Exeggcute",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/1.png"
+            },
+            {
+                "id": "sv8pt5-3",
+                "name": "Pinsir",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/3.png"
+            },
+            {
+                "id": "sv8pt5-28",
+                "name": "Pikachu ex",
+                "price_usd": 0.84,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/28.png"
+            },
+            {
+                "id": "sv8pt5-58",
+                "name": "Cornerstone Mask Ogerpon ex",
+                "price_usd": 0.89,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/58.png"
+            },
+            {
+                "id": "sv3-31",
+                "name": "Numel",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv3/31.png"
+            },
+            {
+                "id": "sv3-18",
+                "name": "Tsareena",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv3/18.png"
+            },
+            {
+                "id": "sv3-165",
+                "name": "Kangaskhan",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3/165.png"
+            },
+            {
+                "id": "sv3-131",
+                "name": "Houndour",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv3/131.png"
+            },
+            {
+                "id": "sv3-196",
+                "name": "Town Store",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv3/196.png"
+            },
+            {
+                "id": "sv3-35",
+                "name": "Darmanitan",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv3/35.png"
+            },
+            {
+                "id": "sv3-121",
+                "name": "Glimmet",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv3/121.png"
+            },
+            {
+                "id": "sv3-173",
+                "name": "Audino",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3/173.png"
+            },
+            {
+                "id": "sv3-95",
+                "name": "Claydol",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3/95.png"
+            },
+            {
+                "id": "sv3-82",
+                "name": "Clefable ex",
+                "price_usd": 0.69,
+                "img_url": "https://images.pokemontcg.io/sv3/82.png"
+            },
+            {
+                "id": "sv8pt5-3",
+                "name": "Pinsir",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/3.png"
+            },
+            {
+                "id": "sv8pt5-15",
+                "name": "Litleo",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/15.png"
+            },
+            {
+                "id": "sv8pt5-108",
+                "name": "Festival Grounds",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/108.png"
+            },
+            {
+                "id": "sv8pt5-68",
+                "name": "Heatran",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/68.png"
+            },
+            {
+                "id": "sv8pt5-97",
+                "name": "Black Belt's Training",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/97.png"
+            },
+            {
+                "id": "sv8pt5-105",
+                "name": "Crispin",
+                "price_usd": 0.46,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/105.png"
+            },
+            {
+                "id": "sv8pt5-39",
+                "name": "Aromatisse",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/39.png"
+            },
+            {
+                "id": "sv8pt5-12",
+                "name": "Teal Mask Ogerpon ex",
+                "price_usd": 1.25,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/12.png"
+            },
+            {
+                "id": "sv8pt5-26",
+                "name": "Glaceon ex",
+                "price_usd": 1.79,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/26.png"
+            },
+            {
+                "id": "sv8pt5-148",
+                "name": "Hearthflame Mask Ogerpon ex",
+                "price_usd": 25.17,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/148.png"
+            },
+            {
+                "id": "sv8-89",
+                "name": "Oricorio",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv8/89.png"
+            },
+            {
+                "id": "sv8-146",
+                "name": "Vigoroth",
+                "price_usd": 0.25,
+                "img_url": "https://images.pokemontcg.io/sv8/146.png"
+            },
+            {
+                "id": "sv8-26",
+                "name": "Oricorio",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv8/26.png"
+            },
+            {
+                "id": "sv8-187",
+                "name": "Surfer",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8/187.png"
+            },
+            {
+                "id": "sv8-7",
+                "name": "Vivillon",
+                "price_usd": 0.22,
+                "img_url": "https://images.pokemontcg.io/sv8/7.png"
+            },
+            {
+                "id": "sv8-77",
+                "name": "Latios",
+                "price_usd": 0.22,
+                "img_url": "https://images.pokemontcg.io/sv8/77.png"
+            },
+            {
+                "id": "sv8-144",
+                "name": "Snorlax",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8/144.png"
+            },
+            {
+                "id": "sv8-28",
+                "name": "Centiskorch",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv8/28.png"
+            },
+            {
+                "id": "sv8-235",
+                "name": "Surfer",
+                "price_usd": 1.31,
+                "img_url": "https://images.pokemontcg.io/sv8/235.png"
+            },
+            {
+                "id": "sv8-68",
+                "name": "Kilowattrel ex",
+                "price_usd": 0.44,
+                "img_url": "https://images.pokemontcg.io/sv8/68.png"
+            },
+            {
+                "id": "sv8pt5-61",
+                "name": "Sneasel",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/61.png"
+            },
+            {
+                "id": "sv8pt5-35",
+                "name": "Duskull",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/35.png"
+            },
+            {
+                "id": "sv8pt5-104",
+                "name": "Ciphermaniac's Codebreaking",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/104.png"
+            },
+            {
+                "id": "sv8pt5-94",
+                "name": "Area Zero Underdepths",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/94.png"
+            },
+            {
+                "id": "sv8pt5-18",
+                "name": "Slowpoke",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/18.png"
+            },
+            {
+                "id": "sv8pt5-97",
+                "name": "Black Belt's Training",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/97.png"
+            },
+            {
+                "id": "sv8pt5-127",
+                "name": "Roto-Stick",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/127.png"
+            },
+            {
+                "id": "sv8pt5-42",
+                "name": "Scream Tail",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/42.png"
+            },
+            {
+                "id": "sv8pt5-134",
+                "name": "Atticus",
+                "price_usd": 0.77,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/134.png"
+            },
+            {
+                "id": "sv8pt5-34",
+                "name": "Espeon ex",
+                "price_usd": 3.15,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/34.png"
+            },
+            {
+                "id": "sv3-103",
+                "name": "Diglett",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3/103.png"
+            },
+            {
+                "id": "sv3-112",
+                "name": "Stunfisk",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3/112.png"
+            },
+            {
+                "id": "sv3-155",
+                "name": "Varoom",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3/155.png"
+            },
+            {
+                "id": "sv3-71",
+                "name": "Toxel",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv3/71.png"
+            },
+            {
+                "id": "sv3-41",
+                "name": "Volcarona",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv3/41.png"
+            },
+            {
+                "id": "sv3-181",
+                "name": "Lechonk",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3/181.png"
+            },
+            {
+                "id": "sv3-117",
+                "name": "Lycanroc",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3/117.png"
+            },
+            {
+                "id": "sv3-105",
+                "name": "Larvitar",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3/105.png"
+            },
+            {
+                "id": "sv3-61",
+                "name": "Finizen",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3/61.png"
+            },
+            {
+                "id": "sv3-22",
+                "name": "Toedscruel ex",
+                "price_usd": 0.63,
+                "img_url": "https://images.pokemontcg.io/sv3/22.png"
+            },
+            {
+                "id": "sv8-234",
+                "name": "Lisia's Appeal",
+                "price_usd": 4.93,
+                "img_url": "https://images.pokemontcg.io/sv8/234.png"
+            },
+            {
+                "id": "sv8-113",
+                "name": "Grapploct",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/113.png"
+            },
+            {
+                "id": "sv8-158",
+                "name": "Maushold",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8/158.png"
+            },
+            {
+                "id": "sv8-146",
+                "name": "Vigoroth",
+                "price_usd": 0.25,
+                "img_url": "https://images.pokemontcg.io/sv8/146.png"
+            },
+            {
+                "id": "sv8-85",
+                "name": "Meowstic",
+                "price_usd": 0.19,
+                "img_url": "https://images.pokemontcg.io/sv8/85.png"
+            },
+            {
+                "id": "sv8-29",
+                "name": "Fuecoco",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8/29.png"
+            },
+            {
+                "id": "sv8-150",
+                "name": "Kecleon",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8/150.png"
+            },
+            {
+                "id": "sv8-8",
+                "name": "Morelull",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/8.png"
+            },
+            {
+                "id": "sv8-13",
+                "name": "Rellor",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8/13.png"
+            },
+            {
+                "id": "sv8-67",
+                "name": "Kilowattrel",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv8/67.png"
+            },
+            {
+                "id": "sv8pt5-115",
+                "name": "Larry's Skill",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/115.png"
+            },
+            {
+                "id": "sv8pt5-68",
+                "name": "Heatran",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/68.png"
+            },
+            {
+                "id": "sv8pt5-97",
+                "name": "Black Belt's Training",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/97.png"
+            },
+            {
+                "id": "sv8pt5-35",
+                "name": "Duskull",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/35.png"
+            },
+            {
+                "id": "sv8pt5-118",
+                "name": "Ogre's Mask",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/118.png"
+            },
+            {
+                "id": "sv8pt5-20",
+                "name": "Goldeen",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/20.png"
+            },
+            {
+                "id": "sv8pt5-38",
+                "name": "Spritzee",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/38.png"
+            },
+            {
+                "id": "sv8pt5-63",
+                "name": "Houndoom",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/63.png"
+            },
+            {
+                "id": "sv8pt5-89",
+                "name": "Hawlucha",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/89.png"
+            },
+            {
+                "id": "sv8pt5-25",
+                "name": "Glaceon",
+                "price_usd": 0.24,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/25.png"
+            },
+            {
+                "id": "sv8pt5-87",
+                "name": "Shaymin",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/87.png"
+            },
+            {
+                "id": "sv8pt5-172",
+                "name": "Drayton",
+                "price_usd": 33.02,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/172.png"
+            },
+            {
+                "id": "sv8pt5-101",
+                "name": "Buddy-Buddy Poffin",
+                "price_usd": 0.22,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/101.png"
+            },
+            {
+                "id": "sv8pt5-83",
+                "name": "Buneary",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/83.png"
+            },
+            {
+                "id": "sv8pt5-97",
+                "name": "Black Belt's Training",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/97.png"
+            },
+            {
+                "id": "sv8pt5-3",
+                "name": "Pinsir",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/3.png"
+            },
+            {
+                "id": "sv8pt5-62",
+                "name": "Houndour",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/62.png"
+            },
+            {
+                "id": "sv8pt5-7",
+                "name": "Cottonee",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/7.png"
+            },
+            {
+                "id": "sv8pt5-122",
+                "name": "Professor's Research",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/122.png"
+            },
+            {
+                "id": "sv8pt5-16",
+                "name": "Pyroar",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/16.png"
+            },
+            {
+                "id": "sv8pt5-72",
+                "name": "Drakloak",
+                "price_usd": 0.37,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/72.png"
+            },
+            {
+                "id": "sv8pt5-71",
+                "name": "Dreepy",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/71.png"
+            },
+            {
+                "id": "sv8pt5-2",
+                "name": "Exeggutor",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/2.png"
+            },
+            {
+                "id": "sv8pt5-112",
+                "name": "Janine's Secret Art",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/112.png"
+            },
+            {
+                "id": "sv8pt5-151",
+                "name": "Palafin ex",
+                "price_usd": 75.29,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/151.png"
+            },
+            {
+                "id": "sv8pt5-77",
+                "name": "Hoothoot",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/77.png"
+            },
+            {
+                "id": "sv8pt5-90",
+                "name": "Noibat",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/90.png"
+            },
+            {
+                "id": "sv8pt5-81",
+                "name": "Miltank",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/81.png"
+            },
+            {
+                "id": "sv8pt5-19",
+                "name": "Slowking",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/19.png"
+            },
+            {
+                "id": "sv8pt5-98",
+                "name": "Black Belt's Training",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/98.png"
+            },
+            {
+                "id": "sv8-103",
+                "name": "Donphan",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/103.png"
+            },
+            {
+                "id": "sv8-29",
+                "name": "Fuecoco",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8/29.png"
+            },
+            {
+                "id": "sv8-157",
+                "name": "Tandemaus",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv8/157.png"
+            },
+            {
+                "id": "sv8-47",
+                "name": "Cryogonal",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8/47.png"
+            },
+            {
+                "id": "sv8-139",
+                "name": "Flapple",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv8/139.png"
+            },
+            {
+                "id": "sv8-191",
+                "name": "Enriching Energy",
+                "price_usd": 0.68,
+                "img_url": "https://images.pokemontcg.io/sv8/191.png"
+            },
+            {
+                "id": "sv8-62",
+                "name": "Blitzle",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8/62.png"
+            },
+            {
+                "id": "sv8-60",
+                "name": "Magnezone",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv8/60.png"
+            },
+            {
+                "id": "sv8-181",
+                "name": "Meddling Memo",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/181.png"
+            },
+            {
+                "id": "sv8-120",
+                "name": "Shroodle",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8/120.png"
+            },
+            {
+                "id": "sv3-110",
+                "name": "Bonsly",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3/110.png"
+            },
+            {
+                "id": "sv3-29",
+                "name": "Ninetales",
+                "price_usd": 0.34,
+                "img_url": "https://images.pokemontcg.io/sv3/29.png"
+            },
+            {
+                "id": "sv3-2",
+                "name": "Gloom",
+                "price_usd": 0.22,
+                "img_url": "https://images.pokemontcg.io/sv3/2.png"
+            },
+            {
+                "id": "sv3-218",
+                "name": "Geeta",
+                "price_usd": 0.97,
+                "img_url": "https://images.pokemontcg.io/sv3/218.png"
+            },
+            {
+                "id": "sv3-48",
+                "name": "Buizel",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv3/48.png"
+            },
+            {
+                "id": "sv3-143",
+                "name": "Mawile",
+                "price_usd": 0.19,
+                "img_url": "https://images.pokemontcg.io/sv3/143.png"
+            },
+            {
+                "id": "sv3-8",
+                "name": "Combee",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv3/8.png"
+            },
+            {
+                "id": "sv3-157",
+                "name": "Dratini",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv3/157.png"
+            },
+            {
+                "id": "sv3-162",
+                "name": "Pidgey",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv3/162.png"
+            },
+            {
+                "id": "sv3-195",
+                "name": "Team Star Grunt",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv3/195.png"
+            },
+            {
+                "id": "sv8pt5-122",
+                "name": "Professor's Research",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/122.png"
+            },
+            {
+                "id": "sv8pt5-85",
+                "name": "Fan Rotom",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/85.png"
+            },
+            {
+                "id": "sv8pt5-2",
+                "name": "Exeggutor",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/2.png"
+            },
+            {
+                "id": "sv8pt5-82",
+                "name": "Lugia ex",
+                "price_usd": 1.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/82.png"
+            },
+            {
+                "id": "sv8pt5-50",
+                "name": "Riolu",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/50.png"
+            },
+            {
+                "id": "sv8pt5-81",
+                "name": "Miltank",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/81.png"
+            },
+            {
+                "id": "sv8pt5-4",
+                "name": "Budew",
+                "price_usd": 0.59,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/4.png"
+            },
+            {
+                "id": "sv8pt5-103",
+                "name": "Carmine",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/103.png"
+            },
+            {
+                "id": "sv8pt5-112",
+                "name": "Janine's Secret Art",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/112.png"
+            },
+            {
+                "id": "sv8pt5-72",
+                "name": "Drakloak",
+                "price_usd": 0.37,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/72.png"
+            },
+            {
+                "id": "sv8pt5-35",
+                "name": "Duskull",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/35.png"
+            },
+            {
+                "id": "sv8pt5-3",
+                "name": "Pinsir",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/3.png"
+            },
+            {
+                "id": "sv8pt5-79",
+                "name": "Dunsparce",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/79.png"
+            },
+            {
+                "id": "sv8pt5-21",
+                "name": "Seaking",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/21.png"
+            },
+            {
+                "id": "sv8pt5-126",
+                "name": "Rescue Board",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/126.png"
+            },
+            {
+                "id": "sv8pt5-111",
+                "name": "Haban Berry",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/111.png"
+            },
+            {
+                "id": "sv8pt5-10",
+                "name": "Dipplin",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/10.png"
+            },
+            {
+                "id": "sv8pt5-47",
+                "name": "Larvitar",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/47.png"
+            },
+            {
+                "id": "sv8pt5-48",
+                "name": "Pupitar",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/48.png"
+            },
+            {
+                "id": "sv8pt5-176",
+                "name": "Iron Leaves ex",
+                "price_usd": 8.64,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/176.png"
+            },
+            {
+                "id": "sv8pt5-112",
+                "name": "Janine's Secret Art",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/112.png"
+            },
+            {
+                "id": "sv8pt5-48",
+                "name": "Pupitar",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/48.png"
+            },
+            {
+                "id": "sv8pt5-63",
+                "name": "Houndoom",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/63.png"
+            },
+            {
+                "id": "sv8pt5-121",
+                "name": "Professor Turo's Scenario",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/121.png"
+            },
+            {
+                "id": "sv8pt5-81",
+                "name": "Miltank",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/81.png"
+            },
+            {
+                "id": "sv8pt5-93",
+                "name": "Amarys",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/93.png"
+            },
+            {
+                "id": "sv8pt5-22",
+                "name": "Vaporeon",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/22.png"
+            },
+            {
+                "id": "sv8pt5-18",
+                "name": "Slowpoke",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/18.png"
+            },
+            {
+                "id": "sv8pt5-16",
+                "name": "Pyroar",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/16.png"
+            },
+            {
+                "id": "sv8pt5-53",
+                "name": "Hippowdon",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/53.png"
+            },
+            {
+                "id": "sv7-133",
+                "name": "Crispin",
+                "price_usd": 0.38,
+                "img_url": "https://images.pokemontcg.io/sv7/133.png"
+            },
+            {
+                "id": "sv7-40",
+                "name": "Frogadier",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv7/40.png"
+            },
+            {
+                "id": "sv7-137",
+                "name": "Gravity Gemstone",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv7/137.png"
+            },
+            {
+                "id": "sv7-8",
+                "name": "Mow Rotom",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv7/8.png"
+            },
+            {
+                "id": "sv7-103",
+                "name": "Meltan",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv7/103.png"
+            },
+            {
+                "id": "sv7-16",
+                "name": "Lokix",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv7/16.png"
+            },
+            {
+                "id": "sv7-99",
+                "name": "Klink",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv7/99.png"
+            },
+            {
+                "id": "sv7-13",
+                "name": "Dipplin",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv7/13.png"
+            },
+            {
+                "id": "sv7-91",
+                "name": "Gulpin",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv7/91.png"
+            },
+            {
+                "id": "sv7-104",
+                "name": "Melmetal",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv7/104.png"
+            },
+            {
+                "id": "sv9-71",
+                "name": "Impidimp",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv9/71.png"
+            },
+            {
+                "id": "sv9-105",
+                "name": "N's Klinklang",
+                "price_usd": 0.54,
+                "img_url": "https://images.pokemontcg.io/sv9/105.png"
+            },
+            {
+                "id": "sv9-29",
+                "name": "Volcarona",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv9/29.png"
+            },
+            {
+                "id": "sv9-38",
+                "name": "Wingull",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv9/38.png"
+            },
+            {
+                "id": "sv9-115",
+                "name": "Druddigon",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv9/115.png"
+            },
+            {
+                "id": "sv9-133",
+                "name": "Hop's Rookidee",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv9/133.png"
+            },
+            {
+                "id": "sv9-57",
+                "name": "Alolan Marowak",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv9/57.png"
+            },
+            {
+                "id": "sv9-55",
+                "name": "Iono's Kilowattrel",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv9/55.png"
+            },
+            {
+                "id": "sv9-74",
+                "name": "Milcery",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv9/74.png"
+            },
+            {
+                "id": "sv9-65",
+                "name": "Oricorio",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv9/65.png"
+            },
+            {
+                "id": "sv9-29",
+                "name": "Volcarona",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv9/29.png"
+            },
+            {
+                "id": "sv9-52",
+                "name": "Iono's Tadbulb",
+                "price_usd": 0.27,
+                "img_url": "https://images.pokemontcg.io/sv9/52.png"
+            },
+            {
+                "id": "sv9-96",
+                "name": "N's Purrloin",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv9/96.png"
+            },
+            {
+                "id": "sv9-26",
+                "name": "N's Darumaka",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv9/26.png"
+            },
+            {
+                "id": "sv9-39",
+                "name": "Pelipper",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv9/39.png"
+            },
+            {
+                "id": "sv9-129",
+                "name": "Komala",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv9/129.png"
+            },
+            {
+                "id": "sv9-57",
+                "name": "Alolan Marowak",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv9/57.png"
+            },
+            {
+                "id": "sv9-66",
+                "name": "Lillie's Cutiefly",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv9/66.png"
+            },
+            {
+                "id": "sv9-31",
+                "name": "Volcanion ex",
+                "price_usd": 0.59,
+                "img_url": "https://images.pokemontcg.io/sv9/31.png"
+            },
+            {
+                "id": "sv9-164",
+                "name": "Lillie's Ribombee",
+                "price_usd": 5.53,
+                "img_url": "https://images.pokemontcg.io/sv9/164.png"
+            },
+            {
+                "id": "sv8pt5-4",
+                "name": "Budew",
+                "price_usd": 0.53,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/4.png"
+            },
+            {
+                "id": "sv8pt5-84",
+                "name": "Lopunny",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/84.png"
+            },
+            {
+                "id": "sv8pt5-118",
+                "name": "Ogre's Mask",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/118.png"
+            },
+            {
+                "id": "sv8pt5-111",
+                "name": "Haban Berry",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/111.png"
+            },
+            {
+                "id": "sv8pt5-1",
+                "name": "Exeggcute",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/1.png"
+            },
+            {
+                "id": "sv8pt5-109",
+                "name": "Friends in Paldea",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/109.png"
+            },
+            {
+                "id": "sv8pt5-112",
+                "name": "Janine's Secret Art",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/112.png"
+            },
+            {
+                "id": "sv8pt5-42",
+                "name": "Scream Tail",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/42.png"
+            },
+            {
+                "id": "sv8pt5-125",
+                "name": "Professor's Research",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/125.png"
+            },
+            {
+                "id": "sv8pt5-173",
+                "name": "Janine's Secret Art",
+                "price_usd": 43.8,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/173.png"
+            },
+            {
+                "id": "sv3pt5-116",
+                "name": "Horsea",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/116.png"
+            },
+            {
+                "id": "sv3pt5-66",
+                "name": "Machop",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/66.png"
+            },
+            {
+                "id": "sv3pt5-128",
+                "name": "Tauros",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/128.png"
+            },
+            {
+                "id": "sv3pt5-36",
+                "name": "Clefable",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/36.png"
+            },
+            {
+                "id": "sv3pt5-39",
+                "name": "Jigglypuff",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/39.png"
+            },
+            {
+                "id": "sv3pt5-67",
+                "name": "Machoke",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/67.png"
+            },
+            {
+                "id": "sv3pt5-60",
+                "name": "Poliwag",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/60.png"
+            },
+            {
+                "id": "sv3pt5-109",
+                "name": "Koffing",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/109.png"
+            },
+            {
+                "id": "sv3pt5-132",
+                "name": "Ditto",
+                "price_usd": 0.95,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/132.png"
+            },
+            {
+                "id": "sv3pt5-179",
+                "name": "Mr. Mime",
+                "price_usd": 5.19,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/179.png"
+            },
+            {
+                "id": "sv6pt5-59",
+                "name": "Janine's Secret Art",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/59.png"
+            },
+            {
+                "id": "sv6pt5-9",
+                "name": "Iron Moth",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/9.png"
+            },
+            {
+                "id": "sv6pt5-13",
+                "name": "Sneasel",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/13.png"
+            },
+            {
+                "id": "sv6pt5-47",
+                "name": "Kyurem",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/47.png"
+            },
+            {
+                "id": "sv6pt5-41",
+                "name": "Cufant",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/41.png"
+            },
+            {
+                "id": "sv6pt5-48",
+                "name": "Meowth",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/48.png"
+            },
+            {
+                "id": "sv6pt5-16",
+                "name": "Drowzee",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/16.png"
+            },
+            {
+                "id": "sv6pt5-11",
+                "name": "Seadra",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/11.png"
+            },
+            {
+                "id": "sv6pt5-73",
+                "name": "Fezandipiti",
+                "price_usd": 7.42,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/73.png"
+            },
+            {
+                "id": "sv6pt5-70",
+                "name": "Dusknoir",
+                "price_usd": 21.93,
+                "img_url": "https://images.pokemontcg.io/sv6pt5/70.png"
+            },
+            {
+                "id": "sv7-70",
+                "name": "Greavard",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv7/70.png"
+            },
+            {
+                "id": "sv7-47",
+                "name": "Electivire",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv7/47.png"
+            },
+            {
+                "id": "sv7-127",
+                "name": "Cyclizar",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv7/127.png"
+            },
+            {
+                "id": "sv7-95",
+                "name": "Morgrem",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv7/95.png"
+            },
+            {
+                "id": "sv7-131",
+                "name": "Area Zero Underdepths",
+                "price_usd": 0.34,
+                "img_url": "https://images.pokemontcg.io/sv7/131.png"
+            },
+            {
+                "id": "sv7-15",
+                "name": "Nymble",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv7/15.png"
+            },
+            {
+                "id": "sv7-78",
+                "name": "Meditite",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv7/78.png"
+            },
+            {
+                "id": "sv7-49",
+                "name": "Lanturn",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv7/49.png"
+            },
+            {
+                "id": "sv7-32",
+                "name": "Lapras ex",
+                "price_usd": 0.84,
+                "img_url": "https://images.pokemontcg.io/sv7/32.png"
+            },
+            {
+                "id": "sv7-163",
+                "name": "Briar",
+                "price_usd": 2.01,
+                "img_url": "https://images.pokemontcg.io/sv7/163.png"
+            },
+            {
+                "id": "sv3pt5-31",
+                "name": "Nidoqueen",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/31.png"
+            },
+            {
+                "id": "sv3pt5-109",
+                "name": "Koffing",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/109.png"
+            },
+            {
+                "id": "sv3pt5-83",
+                "name": "Farfetch'd",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/83.png"
+            },
+            {
+                "id": "sv3pt5-108",
+                "name": "Lickitung",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/108.png"
+            },
+            {
+                "id": "sv3pt5-117",
+                "name": "Seadra",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/117.png"
+            },
+            {
+                "id": "sv3pt5-14",
+                "name": "Kakuna",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/14.png"
+            },
+            {
+                "id": "sv3pt5-112",
+                "name": "Rhydon",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/112.png"
+            },
+            {
+                "id": "sv3pt5-198",
+                "name": "Venusaur ex",
+                "price_usd": 62.65,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/198.png"
+            },
+            {
+                "id": "sv3pt5-65",
+                "name": "Alakazam ex",
+                "price_usd": 0.88,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/65.png"
+            },
+            {
+                "id": "sv3pt5-200",
+                "name": "Blastoise ex",
+                "price_usd": 68.6,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/200.png"
+            },
+            {
+                "id": "sv8-69",
+                "name": "Miraidon",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8/69.png"
+            },
+            {
+                "id": "sv8-24",
+                "name": "Larvesta",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8/24.png"
+            },
+            {
+                "id": "sv8-121",
+                "name": "Grafaiai",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8/121.png"
+            },
+            {
+                "id": "sv8-19",
+                "name": "Ho-Oh",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8/19.png"
+            },
+            {
+                "id": "sv8-90",
+                "name": "Sandygast",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8/90.png"
+            },
+            {
+                "id": "sv8-2",
+                "name": "Exeggcute",
+                "price_usd": 0.22,
+                "img_url": "https://images.pokemontcg.io/sv8/2.png"
+            },
+            {
+                "id": "sv8-47",
+                "name": "Cryogonal",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8/47.png"
+            },
+            {
+                "id": "sv8-12",
+                "name": "Capsakid",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8/12.png"
+            },
+            {
+                "id": "sv8-48",
+                "name": "Black Kyurem ex",
+                "price_usd": 0.62,
+                "img_url": "https://images.pokemontcg.io/sv8/48.png"
+            },
+            {
+                "id": "sv8-191",
+                "name": "Enriching Energy",
+                "price_usd": 0.53,
+                "img_url": "https://images.pokemontcg.io/sv8/191.png"
+            },
+            {
+                "id": "sv8pt5-39",
+                "name": "Aromatisse",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/39.png"
+            },
+            {
+                "id": "sv8pt5-121",
+                "name": "Professor Turo's Scenario",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/121.png"
+            },
+            {
+                "id": "sv8pt5-123",
+                "name": "Professor's Research",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/123.png"
+            },
+            {
+                "id": "sv8pt5-122",
+                "name": "Professor's Research",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/122.png"
+            },
+            {
+                "id": "sv8pt5-74",
+                "name": "Eevee",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/74.png"
+            },
+            {
+                "id": "sv8pt5-21",
+                "name": "Seaking",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/21.png"
+            },
+            {
+                "id": "sv8pt5-18",
+                "name": "Slowpoke",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/18.png"
+            },
+            {
+                "id": "sv8pt5-118",
+                "name": "Ogre's Mask",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/118.png"
+            },
+            {
+                "id": "sv8pt5-62",
+                "name": "Houndour",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/62.png"
+            },
+            {
+                "id": "sv8pt5-140",
+                "name": "Mela",
+                "price_usd": 1.3,
+                "img_url": "https://images.pokemontcg.io/sv8pt5/140.png"
+            },
+            {
+                "id": "sv3pt5-118",
+                "name": "Goldeen",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/118.png"
+            },
+            {
+                "id": "sv3pt5-127",
+                "name": "Pinsir",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/127.png"
+            },
+            {
+                "id": "sv3pt5-147",
+                "name": "Dratini",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/147.png"
+            },
+            {
+                "id": "sv3pt5-84",
+                "name": "Doduo",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/84.png"
+            },
+            {
+                "id": "sv3pt5-96",
+                "name": "Drowzee",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/96.png"
+            },
+            {
+                "id": "sv3pt5-84",
+                "name": "Doduo",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/84.png"
+            },
+            {
+                "id": "sv3pt5-53",
+                "name": "Persian",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/53.png"
+            },
+            {
+                "id": "sv3pt5-112",
+                "name": "Rhydon",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/112.png"
+            },
+            {
+                "id": "sv3pt5-177",
+                "name": "Machoke",
+                "price_usd": 8.49,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/177.png"
+            },
+            {
+                "id": "sv3pt5-136",
+                "name": "Flareon",
+                "price_usd": 1.17,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/136.png"
+            },
+            {
+                "id": "sv8-54",
+                "name": "Cetitan",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8/54.png"
+            },
+            {
+                "id": "sv8-175",
+                "name": "Dusk Ball",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8/175.png"
+            },
+            {
+                "id": "sv8-94",
+                "name": "Flittle",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8/94.png"
+            },
+            {
+                "id": "sv8-84",
+                "name": "Espurr",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv8/84.png"
+            },
+            {
+                "id": "sv8-85",
+                "name": "Meowstic",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8/85.png"
+            },
+            {
+                "id": "sv8-123",
+                "name": "Alolan Dugtrio",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv8/123.png"
+            },
+            {
+                "id": "sv8-113",
+                "name": "Grapploct",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8/113.png"
+            },
+            {
+                "id": "sv8-115",
+                "name": "Glimmora",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/115.png"
+            },
+            {
+                "id": "sv8-252",
+                "name": "Jet Energy",
+                "price_usd": 8.71,
+                "img_url": "https://images.pokemontcg.io/sv8/252.png"
+            },
+            {
+                "id": "sv8-36",
+                "name": "Ceruledge ex",
+                "price_usd": 1.64,
+                "img_url": "https://images.pokemontcg.io/sv8/36.png"
+            },
+            {
+                "id": "sv3pt5-43",
+                "name": "Oddish",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/43.png"
+            },
+            {
+                "id": "sv3pt5-143",
+                "name": "Snorlax",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/143.png"
+            },
+            {
+                "id": "sv3pt5-35",
+                "name": "Clefairy",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/35.png"
+            },
+            {
+                "id": "sv3pt5-77",
+                "name": "Ponyta",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/77.png"
+            },
+            {
+                "id": "sv3pt5-154",
+                "name": "Antique Old Amber",
+                "price_usd": 0.59,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/154.png"
+            },
+            {
+                "id": "sv3pt5-31",
+                "name": "Nidoqueen",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/31.png"
+            },
+            {
+                "id": "sv3pt5-155",
+                "name": "Big Air Balloon",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/155.png"
+            },
+            {
+                "id": "sv3pt5-137",
+                "name": "Porygon",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/137.png"
+            },
+            {
+                "id": "sv3pt5-136",
+                "name": "Flareon",
+                "price_usd": 1.17,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/136.png"
+            },
+            {
+                "id": "sv3pt5-3",
+                "name": "Venusaur ex",
+                "price_usd": 0.64,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/3.png"
+            }
+        ],
+        "rare_boost": 0
+    },
+    "444125802842554378": {
+        "username": "dagooooo",
+        "boosters": [
+            "sv8",
+            "sv8",
+            "sv8",
+            "sv8",
+            "sv8",
+            "sv5"
+        ],
+        "cards": [
+            {
+                "id": "sv3pt5-4",
+                "name": "Charmander",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/4.png"
+            },
+            {
+                "id": "sv3pt5-81",
+                "name": "Magnemite",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/81.png"
+            },
+            {
+                "id": "sv3pt5-164",
+                "name": "Protective Goggles",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/164.png"
+            },
+            {
+                "id": "sv3pt5-125",
+                "name": "Electabuzz",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/125.png"
+            },
+            {
+                "id": "sv3pt5-140",
+                "name": "Kabuto",
+                "price_usd": 1.3,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/140.png"
+            },
+            {
+                "id": "sv3pt5-163",
+                "name": "Leftovers",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/163.png"
+            },
+            {
+                "id": "sv3pt5-69",
+                "name": "Bellsprout",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/69.png"
+            },
+            {
+                "id": "sv3pt5-129",
+                "name": "Magikarp",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/129.png"
+            },
+            {
+                "id": "sv3pt5-38",
+                "name": "Ninetales ex",
+                "price_usd": 1.16,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/38.png"
+            },
+            {
+                "id": "sv3pt5-94",
+                "name": "Gengar",
+                "price_usd": 0.37,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/94.png"
+            },
+            {
+                "id": "sv8-145",
+                "name": "Slakoth",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8/145.png"
+            },
+            {
+                "id": "sv8-104",
+                "name": "Trapinch",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8/104.png"
+            },
+            {
+                "id": "sv8-32",
+                "name": "Charcadet",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv8/32.png"
+            },
+            {
+                "id": "sv8-101",
+                "name": "Paldean Tauros",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/101.png"
+            },
+            {
+                "id": "sv8-126",
+                "name": "Bronzor",
+                "price_usd": 0.02,
+                "img_url": "https://images.pokemontcg.io/sv8/126.png"
+            },
+            {
+                "id": "sv8-134",
+                "name": "Altaria",
+                "price_usd": 0.27,
+                "img_url": "https://images.pokemontcg.io/sv8/134.png"
+            },
+            {
+                "id": "sv8-100",
+                "name": "Annihilape",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8/100.png"
+            },
+            {
+                "id": "sv8-62",
+                "name": "Blitzle",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8/62.png"
+            },
+            {
+                "id": "sv8-117",
+                "name": "Deino",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8/117.png"
+            },
+            {
+                "id": "sv8-110",
+                "name": "Landorus",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/110.png"
+            },
+            {
+                "id": "sv3pt5-104",
+                "name": "Cubone",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/104.png"
+            },
+            {
+                "id": "sv3pt5-133",
+                "name": "Eevee",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/133.png"
+            },
+            {
+                "id": "sv3pt5-154",
+                "name": "Antique Old Amber",
+                "price_usd": 0.59,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/154.png"
+            },
+            {
+                "id": "sv3pt5-10",
+                "name": "Caterpie",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/10.png"
+            },
+            {
+                "id": "sv3pt5-1",
+                "name": "Bulbasaur",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/1.png"
+            },
+            {
+                "id": "sv3pt5-19",
+                "name": "Rattata",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/19.png"
+            },
+            {
+                "id": "sv3pt5-82",
+                "name": "Magneton",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/82.png"
+            },
+            {
+                "id": "sv3pt5-22",
+                "name": "Fearow",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/22.png"
+            },
+            {
+                "id": "sv3pt5-89",
+                "name": "Muk",
+                "price_usd": 0.16,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/89.png"
+            },
+            {
+                "id": "sv3pt5-151",
+                "name": "Mew ex",
+                "price_usd": 7.02,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/151.png"
+            },
+            {
+                "id": "sv5-88",
+                "name": "Golurk",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv5/88.png"
+            },
+            {
+                "id": "sv5-18",
+                "name": "Grubbin",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv5/18.png"
+            },
+            {
+                "id": "sv5-73",
+                "name": "Elgyem",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv5/73.png"
+            },
+            {
+                "id": "sv5-35",
+                "name": "Turtonator",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv5/35.png"
+            },
+            {
+                "id": "sv5-126",
+                "name": "Hoothoot",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv5/126.png"
+            },
+            {
+                "id": "sv5-92",
+                "name": "Mudsdale",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv5/92.png"
+            },
+            {
+                "id": "sv5-53",
+                "name": "Electabuzz",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv5/53.png"
+            },
+            {
+                "id": "sv5-43",
+                "name": "Sharpedo",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv5/43.png"
+            },
+            {
+                "id": "sv5-197",
+                "name": "Bianca's Devotion",
+                "price_usd": 2.56,
+                "img_url": "https://images.pokemontcg.io/sv5/197.png"
+            },
+            {
+                "id": "sv5-121",
+                "name": "Miraidon",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv5/121.png"
+            },
+            {
+                "id": "sv5-51",
+                "name": "Pikachu",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv5/51.png"
+            },
+            {
+                "id": "sv5-155",
+                "name": "Morty's Conviction",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv5/155.png"
+            },
+            {
+                "id": "sv5-127",
+                "name": "Noctowl",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv5/127.png"
+            },
+            {
+                "id": "sv5-23",
+                "name": "Rellor",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv5/23.png"
+            },
+            {
+                "id": "sv5-69",
+                "name": "Bronzong",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv5/69.png"
+            },
+            {
+                "id": "sv5-5",
+                "name": "Shiftry",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv5/5.png"
+            },
+            {
+                "id": "sv5-101",
+                "name": "Arbok",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv5/101.png"
+            },
+            {
+                "id": "sv5-68",
+                "name": "Bronzor",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv5/68.png"
+            },
+            {
+                "id": "sv5-162",
+                "name": "Neo Upper Energy",
+                "price_usd": 3.23,
+                "img_url": "https://images.pokemontcg.io/sv5/162.png"
+            },
+            {
+                "id": "sv5-15",
+                "name": "Whimsicott",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv5/15.png"
+            },
+            {
+                "id": "sv4pt5-76",
+                "name": "Artazon",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/76.png"
+            },
+            {
+                "id": "sv4pt5-4",
+                "name": "Toedscool",
+                "price_usd": 0.03,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/4.png"
+            },
+            {
+                "id": "sv4pt5-35",
+                "name": "Whimsicott",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/35.png"
+            },
+            {
+                "id": "sv4pt5-45",
+                "name": "Mankey",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/45.png"
+            },
+            {
+                "id": "sv4pt5-72",
+                "name": "Oinkologne",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/72.png"
+            },
+            {
+                "id": "sv4pt5-56",
+                "name": "Haunter",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/56.png"
+            },
+            {
+                "id": "sv4pt5-82",
+                "name": "Nemona",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/82.png"
+            },
+            {
+                "id": "sv4pt5-66",
+                "name": "Iron Treads ex",
+                "price_usd": 0.39,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/66.png"
+            },
+            {
+                "id": "sv4pt5-216",
+                "name": "Mew ex",
+                "price_usd": 16.79,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/216.png"
+            },
+            {
+                "id": "sv4pt5-234",
+                "name": "Charizard ex",
+                "price_usd": 172.6,
+                "img_url": "https://images.pokemontcg.io/sv4pt5/234.png"
+            },
+            {
+                "id": "sv5-79",
+                "name": "Iron Valiant",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv5/79.png"
+            },
+            {
+                "id": "sv5-73",
+                "name": "Elgyem",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv5/73.png"
+            },
+            {
+                "id": "sv5-151",
+                "name": "Heavy Baton",
+                "price_usd": 0.26,
+                "img_url": "https://images.pokemontcg.io/sv5/151.png"
+            },
+            {
+                "id": "sv5-55",
+                "name": "Charjabug",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv5/55.png"
+            },
+            {
+                "id": "sv5-23",
+                "name": "Rellor",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv5/23.png"
+            },
+            {
+                "id": "sv5-16",
+                "name": "Deerling",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv5/16.png"
+            },
+            {
+                "id": "sv5-82",
+                "name": "Meditite",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv5/82.png"
+            },
+            {
+                "id": "sv5-89",
+                "name": "Rockruff",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv5/89.png"
+            },
+            {
+                "id": "sv5-145",
+                "name": "Ciphermaniac's Codebreaking",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv5/145.png"
+            },
+            {
+                "id": "sv5-187",
+                "name": "Incineroar ex",
+                "price_usd": 2.33,
+                "img_url": "https://images.pokemontcg.io/sv5/187.png"
+            },
+            {
+                "id": "sv3-182",
+                "name": "Lechonk",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3/182.png"
+            },
+            {
+                "id": "sv3-137",
+                "name": "Inkay",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3/137.png"
+            },
+            {
+                "id": "sv3-161",
+                "name": "Drampa",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3/161.png"
+            },
+            {
+                "id": "sv3-50",
+                "name": "Tympole",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3/50.png"
+            },
+            {
+                "id": "sv3-162",
+                "name": "Pidgey",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv3/162.png"
+            },
+            {
+                "id": "sv3-78",
+                "name": "Bellibolt",
+                "price_usd": 0.19,
+                "img_url": "https://images.pokemontcg.io/sv3/78.png"
+            },
+            {
+                "id": "sv3-45",
+                "name": "Lapras",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3/45.png"
+            },
+            {
+                "id": "sv3-100",
+                "name": "Greavard",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3/100.png"
+            },
+            {
+                "id": "sv3-87",
+                "name": "Snubbull",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv3/87.png"
+            },
+            {
+                "id": "sv3-33",
+                "name": "Victini ex",
+                "price_usd": 0.68,
+                "img_url": "https://images.pokemontcg.io/sv3/33.png"
+            },
+            {
+                "id": "sv3-56",
+                "name": "Froakie",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3/56.png"
+            },
+            {
+                "id": "sv3-39",
+                "name": "Heatmor",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3/39.png"
+            },
+            {
+                "id": "sv3-107",
+                "name": "Nosepass",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv3/107.png"
+            },
+            {
+                "id": "sv3-197",
+                "name": "Vengeful Punch",
+                "price_usd": 0.15,
+                "img_url": "https://images.pokemontcg.io/sv3/197.png"
+            },
+            {
+                "id": "sv3-148",
+                "name": "Pawniard",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3/148.png"
+            },
+            {
+                "id": "sv3-158",
+                "name": "Dragonair",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv3/158.png"
+            },
+            {
+                "id": "sv3-11",
+                "name": "Phantump",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3/11.png"
+            },
+            {
+                "id": "sv3-174",
+                "name": "Bouffalant",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv3/174.png"
+            },
+            {
+                "id": "sv3-221",
+                "name": "Ryme",
+                "price_usd": 0.89,
+                "img_url": "https://images.pokemontcg.io/sv3/221.png"
+            },
+            {
+                "id": "sv3-120",
+                "name": "Klawf ex",
+                "price_usd": 0.84,
+                "img_url": "https://images.pokemontcg.io/sv3/120.png"
+            },
+            {
+                "id": "sv3-114",
+                "name": "Crabrawler",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv3/114.png"
+            },
+            {
+                "id": "sv3-94",
+                "name": "Baltoy",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3/94.png"
+            },
+            {
+                "id": "sv3-161",
+                "name": "Drampa",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3/161.png"
+            },
+            {
+                "id": "sv3-170",
+                "name": "Lillipup",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv3/170.png"
+            },
+            {
+                "id": "sv3-190",
+                "name": "Ortega",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3/190.png"
+            },
+            {
+                "id": "sv3-31",
+                "name": "Numel",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv3/31.png"
+            },
+            {
+                "id": "sv3-90",
+                "name": "Spoink",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv3/90.png"
+            },
+            {
+                "id": "sv3-194",
+                "name": "Ryme",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv3/194.png"
+            },
+            {
+                "id": "sv3-32",
+                "name": "Camerupt",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3/32.png"
+            },
+            {
+                "id": "sv3-22",
+                "name": "Toedscruel ex",
+                "price_usd": 0.78,
+                "img_url": "https://images.pokemontcg.io/sv3/22.png"
+            },
+            {
+                "id": "sv3pt5-148",
+                "name": "Dragonair",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/148.png"
+            },
+            {
+                "id": "sv3pt5-71",
+                "name": "Victreebel",
+                "price_usd": 0.14,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/71.png"
+            },
+            {
+                "id": "sv3pt5-104",
+                "name": "Cubone",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/104.png"
+            },
+            {
+                "id": "sv3pt5-86",
+                "name": "Seel",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/86.png"
+            },
+            {
+                "id": "sv3pt5-102",
+                "name": "Exeggcute",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/102.png"
+            },
+            {
+                "id": "sv3pt5-28",
+                "name": "Sandslash",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/28.png"
+            },
+            {
+                "id": "sv3pt5-84",
+                "name": "Doduo",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/84.png"
+            },
+            {
+                "id": "sv3pt5-154",
+                "name": "Antique Old Amber",
+                "price_usd": 0.6,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/154.png"
+            },
+            {
+                "id": "sv3pt5-68",
+                "name": "Machamp",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/68.png"
+            },
+            {
+                "id": "sv3pt5-199",
+                "name": "Charizard ex",
+                "price_usd": 207.48,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/199.png"
+            },
+            {
+                "id": "sv3pt5-75",
+                "name": "Graveler",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/75.png"
+            },
+            {
+                "id": "sv3pt5-7",
+                "name": "Squirtle",
+                "price_usd": 0.21,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/7.png"
+            },
+            {
+                "id": "sv3pt5-19",
+                "name": "Rattata",
+                "price_usd": 0.13,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/19.png"
+            },
+            {
+                "id": "sv3pt5-37",
+                "name": "Vulpix",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/37.png"
+            },
+            {
+                "id": "sv3pt5-37",
+                "name": "Vulpix",
+                "price_usd": 0.12,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/37.png"
+            },
+            {
+                "id": "sv3pt5-61",
+                "name": "Poliwhirl",
+                "price_usd": 1.86,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/61.png"
+            },
+            {
+                "id": "sv3pt5-163",
+                "name": "Leftovers",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/163.png"
+            },
+            {
+                "id": "sv3pt5-107",
+                "name": "Hitmonchan",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/107.png"
+            },
+            {
+                "id": "sv3pt5-195",
+                "name": "Daisy's Help",
+                "price_usd": 2.76,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/195.png"
+            },
+            {
+                "id": "sv3pt5-105",
+                "name": "Marowak",
+                "price_usd": 0.53,
+                "img_url": "https://images.pokemontcg.io/sv3pt5/105.png"
+            },
+            {
+                "id": "sv7-49",
+                "name": "Lanturn",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv7/49.png"
+            },
+            {
+                "id": "sv7-17",
+                "name": "Toedscool",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv7/17.png"
+            },
+            {
+                "id": "sv7-122",
+                "name": "Fletchinder",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv7/122.png"
+            },
+            {
+                "id": "sv7-23",
+                "name": "Salandit",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv7/23.png"
+            },
+            {
+                "id": "sv7-26",
+                "name": "Scorbunny",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv7/26.png"
+            },
+            {
+                "id": "sv7-16",
+                "name": "Lokix",
+                "price_usd": 0.18,
+                "img_url": "https://images.pokemontcg.io/sv7/16.png"
+            },
+            {
+                "id": "sv7-61",
+                "name": "Drifblim",
+                "price_usd": 0.05,
+                "img_url": "https://images.pokemontcg.io/sv7/61.png"
+            },
+            {
+                "id": "sv7-90",
+                "name": "Koraidon",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv7/90.png"
+            },
+            {
+                "id": "sv7-72",
+                "name": "Cubone",
+                "price_usd": 0.11,
+                "img_url": "https://images.pokemontcg.io/sv7/72.png"
+            },
+            {
+                "id": "sv7-51",
+                "name": "Galvantula ex",
+                "price_usd": 0.67,
+                "img_url": "https://images.pokemontcg.io/sv7/51.png"
+            },
+            {
+                "id": "sv8-74",
+                "name": "Azumarill",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8/74.png"
+            },
+            {
+                "id": "sv8-32",
+                "name": "Charcadet",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8/32.png"
+            },
+            {
+                "id": "sv8-32",
+                "name": "Charcadet",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8/32.png"
+            },
+            {
+                "id": "sv8-12",
+                "name": "Capsakid",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8/12.png"
+            },
+            {
+                "id": "sv8-145",
+                "name": "Slakoth",
+                "price_usd": 0.09,
+                "img_url": "https://images.pokemontcg.io/sv8/145.png"
+            },
+            {
+                "id": "sv8-104",
+                "name": "Trapinch",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8/104.png"
+            },
+            {
+                "id": "sv8-170",
+                "name": "Cyrano",
+                "price_usd": 0.2,
+                "img_url": "https://images.pokemontcg.io/sv8/170.png"
+            },
+            {
+                "id": "sv8-59",
+                "name": "Magneton",
+                "price_usd": 0.08,
+                "img_url": "https://images.pokemontcg.io/sv8/59.png"
+            },
+            {
+                "id": "sv8-124",
+                "name": "Skarmory",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8/124.png"
+            },
+            {
+                "id": "sv8-216",
+                "name": "Scovillain ex",
+                "price_usd": 1.01,
+                "img_url": "https://images.pokemontcg.io/sv8/216.png"
+            },
+            {
+                "id": "sv8-12",
+                "name": "Capsakid",
+                "price_usd": 0.07,
+                "img_url": "https://images.pokemontcg.io/sv8/12.png"
+            },
+            {
+                "id": "sv8-177",
+                "name": "Gravity Mountain",
+                "price_usd": 0.28,
+                "img_url": "https://images.pokemontcg.io/sv8/177.png"
+            },
+            {
+                "id": "sv8-25",
+                "name": "Volcarona",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/25.png"
+            },
+            {
+                "id": "sv8-79",
+                "name": "Mesprit",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8/79.png"
+            },
+            {
+                "id": "sv8-151",
+                "name": "Bouffalant",
+                "price_usd": 0.06,
+                "img_url": "https://images.pokemontcg.io/sv8/151.png"
+            },
+            {
+                "id": "sv8-73",
+                "name": "Marill",
+                "price_usd": 0.1,
+                "img_url": "https://images.pokemontcg.io/sv8/73.png"
+            },
+            {
+                "id": "sv8-172",
+                "name": "Dragon Elixir",
+                "price_usd": 0.17,
+                "img_url": "https://images.pokemontcg.io/sv8/172.png"
+            },
+            {
+                "id": "sv8-100",
+                "name": "Annihilape",
+                "price_usd": 0.04,
+                "img_url": "https://images.pokemontcg.io/sv8/100.png"
+            },
+            {
+                "id": "sv8-4",
+                "name": "Durant ex",
+                "price_usd": 0.59,
+                "img_url": "https://images.pokemontcg.io/sv8/4.png"
+            },
+            {
+                "id": "sv8-230",
+                "name": "Cyrano",
+                "price_usd": 2.28,
+                "img_url": "https://images.pokemontcg.io/sv8/230.png"
+            }
+        ],
+        "rare_boost": 0
+    }
+}
