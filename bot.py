@@ -39,6 +39,9 @@ ITEMS = {
     "rare_boost": {"name": "Rare Boost", "price": 200},
 }
 
+# Grafika tyłu karty używana w animacji odsłaniania
+CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
+
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
 
@@ -96,6 +99,31 @@ def compute_cart_total(cart):
     total = sum(q * BOOSTER_PRICE for q in cart.get("boosters", {}).values())
     total += sum(q * ITEMS[i]["price"] for i, q in cart.get("items", {}).items())
     return total
+
+def current_week_info():
+    now = datetime.datetime.utcnow()
+    week = now.isocalendar()[1]
+    year = now.isocalendar()[0]
+    return week, year
+
+def update_weekly_best(user, price):
+    week, year = current_week_info()
+    best = user.get("weekly_best", {})
+    if best.get("week") != week or best.get("year") != year or price > best.get("price", 0):
+        user["weekly_best"] = {"week": week, "year": year, "price": price}
+
+def check_master_set(user, set_id, all_sets):
+    set_info = next((s for s in all_sets if s["id"] == set_id), None)
+    if not set_info:
+        return False
+    total = set_info.get("total", 0)
+    owned = len({c["id"] for c in user["cards"] if c["id"].startswith(set_id)})
+    if total > 0 and owned >= total:
+        ach = f"master:{set_id}"
+        if ach not in user.setdefault("achievements", []):
+            user["achievements"].append(ach)
+            return True
+    return False
 
 def build_shop_embed(user_id):
     sets = get_all_sets()
@@ -535,12 +563,13 @@ async def build_set_embed(user, sets, set_id):
     return embed
 
 class CardRevealView(View):
-    def __init__(self, cards, user_id, set_logo_url=None):
+    def __init__(self, cards, user_id, set_id, set_logo_url=None):
         super().__init__(timeout=120)
         self.cards = cards
         self.index = 0
         self.summaries = []
         self.user_id = str(user_id)
+        self.set_id = set_id
         self.set_logo_url = set_logo_url
 
     async def interaction_check(self, interaction):
@@ -593,6 +622,10 @@ class CardRevealView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
+            back = discord.Embed()
+            back.set_image(url=CARD_BACK_URL)
+            await interaction.response.edit_message(embed=back, view=self.parent)
+            await asyncio.sleep(0.7)
             self.parent.index += 1
             await self.parent.show_card(interaction, first=False)
 
@@ -605,6 +638,7 @@ class CardRevealView(View):
             users = load_users()
             uid = str(self.parent.user_id)
             if uid in users:
+                max_price = 0
                 for card in self.parent.cards:
                     price = None
                     if "tcgplayer" in card and "prices" in card["tcgplayer"]:
@@ -621,6 +655,11 @@ class CardRevealView(View):
                         "price_usd": price or 0,
                         "img_url": img_url
                     })
+                    if price and price > max_price:
+                        max_price = price
+                update_weekly_best(users[uid], max_price)
+                all_sets = get_all_sets()
+                check_master_set(users[uid], self.parent.set_id, all_sets)
                 save_users(users)
                 drop_channel = None
                 if hasattr(interaction, "guild") and interaction.guild:
@@ -702,6 +741,9 @@ async def start_cmd(interaction: discord.Interaction):
         "rare_boost": 0,
         "money": START_MONEY,
         "last_daily": 0,
+        "daily_streak": 0,
+        "weekly_best": {"week": 0, "year": 0, "price": 0},
+        "achievements": [],
     }
     save_users(users)
     await interaction.response.send_message(
@@ -748,7 +790,7 @@ async def open_booster(interaction, set_id):
     all_sets = get_all_sets()
     set_data = next((s for s in all_sets if s["id"] == set_id), None)
     logo_url = set_data["images"]["logo"] if set_data and "images" in set_data and "logo" in set_data["images"] else None
-    view = CardRevealView(cards, user_id=str(interaction.user.id), set_logo_url=logo_url)
+    view = CardRevealView(cards, user_id=str(interaction.user.id), set_id=set_id, set_logo_url=logo_url)
     if interaction.response.is_done():
         await view.show_card(interaction, first=True)
     else:
@@ -799,6 +841,15 @@ async def daily(interaction: discord.Interaction):
             f"⌛ Nagrodę możesz odebrać za {h}h {m}m {s}s.", ephemeral=True
         )
         return
+    # Aktualizacja serii dziennych nagród
+    streak = users[uid].get("daily_streak", 0)
+    if now - last <= DAILY_COOLDOWN * 1.5 and last != 0:
+        streak += 1
+    else:
+        streak = 1
+    users[uid]["daily_streak"] = streak
+    if streak >= 30 and "daily_30" not in users[uid].get("achievements", []):
+        users[uid].setdefault("achievements", []).append("daily_30")
     users[uid]["money"] = users[uid].get("money", 0) + DAILY_AMOUNT
     users[uid]["last_daily"] = now
     save_users(users)
@@ -842,6 +893,54 @@ async def sklep(interaction: discord.Interaction):
     view = ShopView(uid)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
     view.message = await interaction.original_response()
+
+# --- KOMENDA OSIAGNIĘCIA ---
+@client.tree.command(name="osiagniecia", description="Wyświetl swoje osiągnięcia")
+async def achievements_cmd(interaction: discord.Interaction):
+    users = load_users()
+    uid = str(interaction.user.id)
+    if uid not in users:
+        await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
+        return
+    ach = users[uid].get("achievements", [])
+    all_sets = get_all_sets()
+    lines = []
+    for a in ach:
+        if a.startswith("master:"):
+            sid = a.split(":",1)[1]
+            name = next((s['name'] for s in all_sets if s['id']==sid), sid)
+            lines.append(f"🏆 Master set {name}")
+        elif a == "daily_30":
+            lines.append("⏰ 30-dniowy streak daily")
+        elif a == "top3_week":
+            lines.append("🥇 TOP 3 drop tygodnia")
+    desc = "\n".join(lines) if lines else "Brak osiągnięć"
+    embed = discord.Embed(title="Twoje osiągnięcia", description=desc, color=discord.Color.green())
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+# --- KOMENDA RANKING ---
+@client.tree.command(name="ranking", description="Najlepsze dropy tygodnia")
+async def ranking_cmd(interaction: discord.Interaction):
+    users = load_users()
+    week, year = current_week_info()
+    entries = []
+    for uid, udata in users.items():
+        best = udata.get("weekly_best")
+        if best and best.get("week") == week and best.get("year") == year:
+            entries.append((uid, best.get("price", 0)))
+    top3 = sorted(entries, key=lambda x: x[1], reverse=True)[:3]
+    lines = [f"{idx+1}. <@{uid}> - {usd_to_pln(price):.2f} PLN" for idx,(uid,price) in enumerate(top3)]
+    if not lines:
+        lines = ["Brak danych"]
+    embed = discord.Embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+    changed = False
+    for uid,_ in top3:
+        if "top3_week" not in users[uid].get("achievements", []):
+            users[uid].setdefault("achievements", []).append("top3_week")
+            changed = True
+    if changed:
+        save_users(users)
 
 # --- KOMENDA GIVEAWAY ---
 @client.tree.command(name="giveaway", description="Utwórz nowe losowanie boosterów")
