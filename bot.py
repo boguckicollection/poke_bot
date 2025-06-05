@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ui import View, Button, Modal, TextInput, select, Select
 from giveaway import GiveawayModal, GiveawayView, parse_time_string
-from utils import load_users, save_users, get_all_sets
+from utils import load_users, save_users, get_all_sets, ensure_user_fields
 import os
 import json
 import aiohttp
@@ -45,27 +45,21 @@ CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
 
+
+# Przedmioty dostępne w sklepie
+ITEMS = {
+    "rare_boost": {"name": "Rare Boost", "price": 200},
+}
+
+# Grafika tyłu karty używana w animacji odsłaniania
+CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000_QL80_DpWeblab_.jpg"
+
+# Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
+carts = {}
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-
-#def load_users():
-#    try:
-#        with open(USERS_FILE, "r") as f:
-#            return json.load(f)
-#    except FileNotFoundError:
-#        return {}
-
-#def save_users(data):
-#    with open(USERS_FILE, "w") as f:
-#        json.dump(data, f, indent=4)
-
-#def get_all_sets():
-#    try:
-#        with open(SETS_FILE, "r") as f:
-#            return json.load(f)
-#    except FileNotFoundError:
-#        return []
 
 async def fetch_and_save_sets():
     url = "https://api.pokemontcg.io/v2/sets"
@@ -612,9 +606,10 @@ class CardRevealView(View):
         else:
             self.add_item(self.SummaryButton(self))
         if first or interaction.response.is_done():
-            await interaction.edit_original_response(embed=embed, view=self)
+            await interaction.edit_original_response(embed=embed, view=self, attachments=[])
+
         else:
-            await interaction.response.edit_message(embed=embed, view=self)
+            await interaction.response.edit_message(embed=embed, view=self, attachments=[])
 
     class NextCardButton(Button):
         def __init__(self, parent):
@@ -624,7 +619,10 @@ class CardRevealView(View):
         async def callback(self, interaction: discord.Interaction):
             back = discord.Embed()
             back.set_image(url=CARD_BACK_URL)
-            await interaction.response.edit_message(embed=back, view=self.parent)
+            if interaction.response.is_done():
+                await interaction.edit_original_response(embed=back, view=self.parent, attachments=[])
+            else:
+                await interaction.response.edit_message(embed=back, view=self.parent, attachments=[])
             await asyncio.sleep(0.7)
             self.parent.index += 1
             await self.parent.show_card(interaction, first=False)
@@ -638,6 +636,7 @@ class CardRevealView(View):
             users = load_users()
             uid = str(self.parent.user_id)
             if uid in users:
+                ensure_user_fields(users[uid])
                 max_price = 0
                 for card in self.parent.cards:
                     price = None
@@ -758,6 +757,7 @@ async def otworz(interaction: discord.Interaction):
     if user_id not in users or not users[user_id]["boosters"]:
         await interaction.response.send_message("❌ Nie masz boosterów do otwarcia! Użyj `/kup_booster`.", ephemeral=True)
         return
+    ensure_user_fields(users[user_id])
     all_sets = get_all_sets()
     id_to_name = {s['id']: s['name'] for s in all_sets}
     booster_counts = Counter(users[user_id]["boosters"])
@@ -805,7 +805,7 @@ async def kolekcja(interaction: discord.Interaction):
     if user_id not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
-    user = users[user_id]
+    user = ensure_user_fields(users[user_id])
     boosters_counter = Counter(user["boosters"])
     view = CollectionMainView(user, boosters_counter, all_sets)
     embed = await view.build_summary_embed()
@@ -816,6 +816,8 @@ async def kolekcja(interaction: discord.Interaction):
 async def saldo(interaction: discord.Interaction):
     users = load_users()
     uid = str(interaction.user.id)
+    if uid in users:
+        ensure_user_fields(users[uid])
     if uid not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
@@ -830,6 +832,8 @@ async def daily(interaction: discord.Interaction):
     if uid not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
+    ensure_user_fields(users[uid])
+
     now = datetime.datetime.utcnow().timestamp()
     last = users[uid].get("last_daily", 0)
     if now - last < DAILY_COOLDOWN:
@@ -866,6 +870,8 @@ async def kup_booster(interaction: discord.Interaction, kod: str):
     if uid not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
+    ensure_user_fields(users[uid])
+
     sets = get_all_sets()
     target = next((s for s in sets if s.get("id") == kod.lower() or s.get("ptcgoCode", "").lower() == kod.lower()), None)
     if not target:
@@ -889,6 +895,8 @@ async def sklep(interaction: discord.Interaction):
     if uid not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
+    ensure_user_fields(users[uid])
+
     embed = build_shop_embed(uid)
     view = ShopView(uid)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -902,6 +910,8 @@ async def achievements_cmd(interaction: discord.Interaction):
     if uid not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
+    ensure_user_fields(users[uid])
+
     ach = users[uid].get("achievements", [])
     all_sets = get_all_sets()
     lines = []
@@ -925,6 +935,8 @@ async def ranking_cmd(interaction: discord.Interaction):
     week, year = current_week_info()
     entries = []
     for uid, udata in users.items():
+        ensure_user_fields(udata)
+
         best = udata.get("weekly_best")
         if best and best.get("week") == week and best.get("year") == year:
             entries.append((uid, best.get("price", 0)))
@@ -936,6 +948,7 @@ async def ranking_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
     changed = False
     for uid,_ in top3:
+        ensure_user_fields(users[uid])
         if "top3_week" not in users[uid].get("achievements", []):
             users[uid].setdefault("achievements", []).append("top3_week")
             changed = True
@@ -976,6 +989,7 @@ async def on_message(message):
                 break
         if found_user:
             user_id, _ = found_user
+            ensure_user_fields(users[user_id])
             users[user_id]["boosters"].append(set_id)
             save_users(users)
             class BoosterButtonsView(View):
@@ -1018,6 +1032,7 @@ async def on_message(message):
                 break
         if found_user:
             user_id, _ = found_user
+            ensure_user_fields(users[user_id])
             users[user_id]["rare_boost"] = users[user_id].get("rare_boost", 0) + 1
             save_users(users)
             await message.channel.send(
@@ -1050,6 +1065,7 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
     users = load_users()
     boost_active = False
     if user_id and user_id in users:
+        ensure_user_fields(users[user_id])
         if users[user_id].get("rare_boost", 0) > 0:
             boost_active = True
             users[user_id]["rare_boost"] -= 1
