@@ -49,24 +49,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-#def load_users():
-#    try:
-#        with open(USERS_FILE, "r") as f:
-#            return json.load(f)
-#    except FileNotFoundError:
-#        return {}
-
-#def save_users(data):
-#    with open(USERS_FILE, "w") as f:
-#        json.dump(data, f, indent=4)
-
-#def get_all_sets():
-#    try:
-#        with open(SETS_FILE, "r") as f:
-#            return json.load(f)
-#    except FileNotFoundError:
-#        return []
-
 async def fetch_and_save_sets():
     url = "https://api.pokemontcg.io/v2/sets"
     headers = {"X-Api-Key": POKETCG_API_KEY}
