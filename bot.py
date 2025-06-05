@@ -611,7 +611,7 @@ class CardRevealView(View):
             self.add_item(self.NextCardButton(self))
         else:
             self.add_item(self.SummaryButton(self))
-        if first:
+        if first or interaction.response.is_done():
             await interaction.edit_original_response(embed=embed, view=self)
         else:
             await interaction.response.edit_message(embed=embed, view=self)
