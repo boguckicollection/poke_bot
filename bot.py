@@ -45,6 +45,31 @@ CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
 
+=======
+
+# Przedmioty dostępne w sklepie
+ITEMS = {
+    "rare_boost": {"name": "Rare Boost", "price": 200},
+}
+
+# Grafika tyłu karty używana w animacji odsłaniania
+CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
+
+# Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
+carts = {}
+
+
+# Przedmioty dostępne w sklepie
+ITEMS = {
+    "rare_boost": {"name": "Rare Boost", "price": 200},
+}
+
+# Grafika tyłu karty używana w animacji odsłaniania
+CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000_QL80_DpWeblab_.jpg"
+
+# Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
+carts = {}
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
