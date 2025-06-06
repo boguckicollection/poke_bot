@@ -783,11 +783,17 @@ async def open_booster(interaction, set_id):
     all_sets = get_all_sets()
     set_data = next((s for s in all_sets if s["id"] == set_id), None)
     logo_url = set_data["images"]["logo"] if set_data and "images" in set_data and "logo" in set_data["images"] else None
-    view = CardRevealView(cards, user_id=str(interaction.user.id), set_id=set_id, set_logo_url=logo_url)
-    if interaction.response.is_done():
-        await view.show_card(interaction, first=True)
-    else:
-        await interaction.response.send_message("🃏 Wybierz booster do otwarcia:", view=BoosterSelectView(), ephemeral=True)
+    view = CardRevealView(
+        cards,
+        user_id=str(interaction.user.id),
+        set_id=set_id,
+        set_logo_url=logo_url,
+    )
+    # Interaction is already deferred before calling this function, so we can
+    # always edit the original response to show the first card. The previous
+    # branch that referenced ``BoosterSelectView`` was unreachable and caused
+    # a ``NameError`` if triggered outside of ``/otworz``.
+    await view.show_card(interaction, first=True)
 
 # --- KOMENDA KOLEKCJA (z paginacją, przyciski) ---
 @client.tree.command(name="kolekcja", description="Twoja kolekcja, boosterki i karty z setów!")
