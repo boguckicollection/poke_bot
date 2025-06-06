@@ -41,6 +41,8 @@ ITEMS = {
 
 # Grafika tyłu karty używana w animacji odsłaniania
 CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000_QL80_DpWeblab_.jpg"
+# lub jeśli chcesz użyć oficjalnego:
+# CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
@@ -76,6 +78,10 @@ async def fetch_and_save_sets():
                     json.dump(filtered_sets, f, indent=4)
                 print(f"✅ Dodano {len(new_sets)} nowych setów")
             return new_sets
+          
+def booster_image_url(set_id: str) -> str:
+    """Return the URL of the booster pack image for a given set."""
+    return f"https://images.pokemontcg.io/{set_id}/booster.png"
 
 def compute_cart_total(cart):
     total = sum(q * BOOSTER_PRICE for q in cart.get("boosters", {}).values())
@@ -118,6 +124,7 @@ def build_shop_embed(user_id):
     for s in sets[:10]:
         img = booster_image_url(s['id'])
         boosters_desc.append(f"[`{s['ptcgoCode']}` {s['name']} - {BOOSTER_PRICE} monet]({img})")
+
     embed.add_field(name="Boostery", value="\n".join(boosters_desc) or "Brak", inline=False)
     items_desc = [f"{info['name']} - {info['price']} monet" for info in ITEMS.values()]
     embed.add_field(name="Itemy", value="\n".join(items_desc) or "Brak", inline=False)
@@ -780,19 +787,20 @@ async def open_booster(interaction, set_id):
     if not cards:
         await interaction.edit_original_response(content="⚠️ Nie udało się pobrać kart z boostera!", embed=None, view=None)
         return
+
     all_sets = get_all_sets()
     set_data = next((s for s in all_sets if s["id"] == set_id), None)
     logo_url = set_data["images"]["logo"] if set_data and "images" in set_data and "logo" in set_data["images"] else None
+
     view = CardRevealView(
         cards,
         user_id=str(interaction.user.id),
         set_id=set_id,
         set_logo_url=logo_url,
     )
+
     # Interaction is already deferred before calling this function, so we can
-    # always edit the original response to show the first card. The previous
-    # branch that referenced ``BoosterSelectView`` was unreachable and caused
-    # a ``NameError`` if triggered outside of ``/otworz``.
+    # always edit the original response to show the first card.
     await view.show_card(interaction, first=True)
 
 # --- KOMENDA KOLEKCJA (z paginacją, przyciski) ---
