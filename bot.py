@@ -40,6 +40,19 @@ ITEMS = {
 }
 
 # Grafika tyłu karty używana w animacji odsłaniania
+CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000_QL80_DpWeblab_.jpg"
+
+# Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
+carts = {}
+
+=======
+
+# Przedmioty dostępne w sklepie
+ITEMS = {
+    "rare_boost": {"name": "Rare Boost", "price": 200},
+}
+
+# Grafika tyłu karty używana w animacji odsłaniania
 CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
@@ -243,6 +256,7 @@ class ShopView(View):
             if uid not in users:
                 await interaction.response.send_message("📭 Nie masz konta.", ephemeral=True)
                 return
+            ensure_user_fields(users[uid])
             cart = carts.get(uid)
             if not cart or (not cart.get('boosters') and not cart.get('items')):
                 await interaction.response.send_message("Koszyk jest pusty", ephemeral=True)
@@ -607,7 +621,6 @@ class CardRevealView(View):
             self.add_item(self.SummaryButton(self))
         if first or interaction.response.is_done():
             await interaction.edit_original_response(embed=embed, view=self, attachments=[])
-
         else:
             await interaction.response.edit_message(embed=embed, view=self, attachments=[])
 
@@ -833,7 +846,6 @@ async def daily(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-
     now = datetime.datetime.utcnow().timestamp()
     last = users[uid].get("last_daily", 0)
     if now - last < DAILY_COOLDOWN:
@@ -871,7 +883,6 @@ async def kup_booster(interaction: discord.Interaction, kod: str):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-
     sets = get_all_sets()
     target = next((s for s in sets if s.get("id") == kod.lower() or s.get("ptcgoCode", "").lower() == kod.lower()), None)
     if not target:
@@ -896,7 +907,6 @@ async def sklep(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-
     embed = build_shop_embed(uid)
     view = ShopView(uid)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -911,7 +921,6 @@ async def achievements_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-
     ach = users[uid].get("achievements", [])
     all_sets = get_all_sets()
     lines = []
@@ -936,7 +945,6 @@ async def ranking_cmd(interaction: discord.Interaction):
     entries = []
     for uid, udata in users.items():
         ensure_user_fields(udata)
-
         best = udata.get("weekly_best")
         if best and best.get("week") == week and best.get("year") == year:
             entries.append((uid, best.get("price", 0)))
