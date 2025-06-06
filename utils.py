@@ -20,3 +20,16 @@ def get_all_sets():
             return json.load(f)
     except FileNotFoundError:
         return []
+
+
+def ensure_user_fields(user):
+    """Ensure that a user dictionary contains all expected keys."""
+    user.setdefault("boosters", [])
+    user.setdefault("cards", [])
+    user.setdefault("rare_boost", 0)
+    user.setdefault("money", 0)
+    user.setdefault("last_daily", 0)
+    user.setdefault("daily_streak", 0)
+    user.setdefault("weekly_best", {"week": 0, "year": 0, "price": 0})
+    user.setdefault("achievements", [])
+    return user
