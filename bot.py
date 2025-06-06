@@ -82,7 +82,12 @@ async def fetch_and_save_sets():
             if response.status != 200:
                 print(f"❌ Błąd pobierania zestawów: {response.status}")
                 return []
-            data = await response.json()
+def booster_image_url(set_id: str) -> str:
+    """Return the URL of the booster pack image for a given set."""
+    return f"https://images.pokemontcg.io/{set_id}/booster.png"
+
+        img = booster_image_url(s['id'])
+        boosters_desc.append(f"[`{s['ptcgoCode']}` {s['name']} - {BOOSTER_PRICE} monet]({img})")
             sets = data.get("data", [])
             filtered_sets = sorted(
                 [s for s in sets if s.get("ptcgoCode")],
