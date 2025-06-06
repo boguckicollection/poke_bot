@@ -50,6 +50,10 @@ Poniżej przykład grafiki jednego z setów dostępnych w sklepie:
 
 ![Set logo](https://images.pokemontcg.io/sv10/logo.png)
 
+Miniaturki boosterów są dostępne pod adresem `https://images.pokemontcg.io/<ID>/booster.png`,
+gdzie `<ID>` to identyfikator zestawu zapisany w `sets.json`. Bot korzysta z tych
+adresów, aby pokazywać obrazki boosterów w sklepie.
+
 ## Pliki danych
 
 - `users.json` – lokalna baza kont użytkowników i ich kolekcji.
