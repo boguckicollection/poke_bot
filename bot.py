@@ -13,6 +13,7 @@ from poke_utils import (
 )
 import os
 import json
+from pathlib import Path
 import aiohttp
 import random
 from collections import Counter
@@ -27,7 +28,9 @@ COINS_PER_USD = 25
 
 # Prosty cache kart pobranych z API {set_id: {rarity: [cards]}}
 CARD_CACHE = {}
-CARD_CACHE_FILE = "card_cache.json"
+BASE_DIR = Path(__file__).resolve().parent
+GRAPHIC_DIR = BASE_DIR / "graphic"
+CARD_CACHE_FILE = BASE_DIR / "card_cache.json"
 
 def load_card_cache():
     global CARD_CACHE
@@ -55,8 +58,8 @@ DAILY_COOLDOWN = 24 * 3600
 load_dotenv()
 load_card_cache()
 
-USERS_FILE = "users.json"
-SETS_FILE = "sets.json"
+USERS_FILE = BASE_DIR / "users.json"
+SETS_FILE = BASE_DIR / "sets.json"
 DISCORD_TOKEN = os.environ["BOT_TOKEN"]
 POKETCG_API_KEY = os.environ["POKETCG_API_KEY"]
 DROP_CHANNEL_ID = 1374695570182246440
@@ -75,9 +78,9 @@ CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000
 # CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
 
 # Grafika nagłówka sklepu
-SHOP_IMAGE_PATH = "graphic/shop.png"
+SHOP_IMAGE_PATH = GRAPHIC_DIR / "shop.png"
 # Ikona waluty
-COIN_IMAGE_PATH = "graphic/coin.png"
+COIN_IMAGE_PATH = GRAPHIC_DIR / "coin.png"
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
@@ -386,7 +389,7 @@ class ShopView(View):
                                         cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
                                         await shop_view.update()
                                         embed = build_cart_embed(shop_view.user_id, f"Dodano {qty}x {set_name}")
-                                        file = discord.File("graphic/koszyk.png", filename="koszyk.png")
+                                        file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
                                         await i5.response.send_message(embed=embed, view=QuickBuyView(shop_view), ephemeral=True, file=file)
 
                                     modal = QuantityModal(after_qty)
@@ -394,17 +397,17 @@ class ShopView(View):
 
                             embed = discord.Embed(title="Wybierz set", color=EMBED_COLOR)
                             embed.set_thumbnail(url="attachment://wybierz_set.png")
-                            file = discord.File("graphic/wybierz_set.png", filename="wybierz_set.png")
+                            file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                             await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
 
                     embed = discord.Embed(title="Wybierz erę", color=EMBED_COLOR)
                     embed.set_thumbnail(url="attachment://wybierz_set.png")
-                    file = discord.File("graphic/wybierz_set.png", filename="wybierz_set.png")
+                    file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                     await i2.response.edit_message(embed=embed, view=EraView(self.parent.parent), attachments=[file])
 
             embed = discord.Embed(title="Wybierz język", color=EMBED_COLOR)
             embed.set_thumbnail(url="attachment://wybierz_set.png")
-            file = discord.File("graphic/wybierz_set.png", filename="wybierz_set.png")
+            file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
             await interaction.response.send_message(embed=embed, view=LanguageView(self), ephemeral=True, file=file)
 
     class AddItemButton(Button):
@@ -430,7 +433,7 @@ class ShopView(View):
                         cart['items'][item_id] = cart['items'].get(item_id, 0) + qty
                         await self.parent.parent.update()
                         embed = build_cart_embed(self.parent.parent.user_id, f"Dodano {qty}x {item_name}")
-                        file = discord.File("graphic/koszyk.png", filename="koszyk.png")
+                        file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
                         await i3.response.send_message(embed=embed, view=QuickBuyView(self.parent.parent), ephemeral=True, file=file)
 
                     modal = QuantityModal(after_qty)
@@ -438,7 +441,7 @@ class ShopView(View):
 
             embed = discord.Embed(title="Wybierz item", color=EMBED_COLOR)
             embed.set_thumbnail(url="attachment://koszyk.png")
-            file = discord.File("graphic/koszyk.png", filename="koszyk.png")
+            file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
             await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, file=file)
 
     class ClearButton(Button):
@@ -624,7 +627,7 @@ class CollectionMainView(View):
                 color=EMBED_COLOR
             )
             embed.set_thumbnail(url="attachment://sety.png")
-            file = discord.File("graphic/sety.png", filename="sety.png")
+            file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
 
     class SetViewButton(Button):
@@ -682,7 +685,7 @@ class CollectionMainView(View):
                         options=self.parent_view.options,
                         selected_set_id=set_id,
                     )
-                    file = discord.File("graphic/sety.png", filename="sety.png")
+                    file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
                     await interaction.response.edit_message(embed=embed, view=view, attachments=[file])
 
             view = SetDropdownView(self.user, sets, options)
@@ -692,7 +695,7 @@ class CollectionMainView(View):
                 color=EMBED_COLOR,
             )
             embed.set_thumbnail(url="attachment://sety.png")
-            file = discord.File("graphic/sety.png", filename="sety.png")
+            file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
     class BoosterOpenButton(Button):
         def __init__(self, user, boosters_counter, all_sets):
@@ -933,7 +936,7 @@ class CardRevealView(View):
                         boosters_counter = Counter(user["boosters"])
                         view = CollectionMainView(user, boosters_counter, all_sets)
                         embed = await view.build_summary_embed()
-                        file = discord.File("graphic/kolekcja.png", filename="kolekcja.png")
+                        file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
                         await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
                 await interaction.response.edit_message(
                     content=(
@@ -1041,7 +1044,7 @@ async def kolekcja(interaction: discord.Interaction):
     boosters_counter = Counter(user["boosters"])
     view = CollectionMainView(user, boosters_counter, all_sets)
     embed = await view.build_summary_embed()
-    file = discord.File("graphic/kolekcja.png", filename="kolekcja.png")
+    file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
 
 # --- KOMENDA SALDO ---
@@ -1244,7 +1247,7 @@ async def on_message(message):
                     boosters_counter = Counter(user["boosters"])
                     view = CollectionMainView(user, boosters_counter, all_sets)
                     embed = await view.build_summary_embed()
-                    file = discord.File("graphic/kolekcja.png", filename="kolekcja.png")
+                    file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
                     await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
             await message.channel.send(
                 f"✅ Booster `{set_name}` został przydzielony do kolekcji użytkownika **{username}**!",

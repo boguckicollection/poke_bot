@@ -1,9 +1,11 @@
 import json
+from pathlib import Path
 
-USERS_FILE = "users.json"
-SETS_FILE = "sets.json"
-PRICE_FILE = "price.json"
-DATA_FILE = "data.json"
+BASE_DIR = Path(__file__).resolve().parent
+USERS_FILE = BASE_DIR / "users.json"
+SETS_FILE = BASE_DIR / "sets.json"
+PRICE_FILE = BASE_DIR / "price.json"
+DATA_FILE = BASE_DIR / "data.json"
 
 def load_users():
     try:
