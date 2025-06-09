@@ -122,8 +122,12 @@ def booster_image_url(set_id: str) -> str:
 
 def build_shop_embed(user_id, page: int = 0):
     sets = get_all_sets()
-    embed = discord.Embed(title="Sklep", color=discord.Color.gold())
-    embed.set_image(url="attachment://shop.png")
+    embed = discord.Embed(
+        title="Sklep",
+        description="Użyj przycisków poniżej, aby dodać produkty do koszyka.",
+        color=discord.Color.gold(),
+    )
+    embed.set_thumbnail(url="attachment://shop.png")
 
     start = page * 10
     page_sets = sets[start:start + 10]
@@ -164,6 +168,16 @@ class QuantityModal(Modal):
             qty = 1
         await self.callback_fn(interaction, qty)
 
+
+class QuickBuyView(View):
+    def __init__(self, shop_view):
+        super().__init__(timeout=60)
+        self.shop_view = shop_view
+
+    @discord.ui.button(label="Kup teraz", style=discord.ButtonStyle.success)
+    async def finalize(self, interaction: discord.Interaction, button: Button):
+        await self.shop_view.finalize(interaction)
+
 class ShopView(View):
     def __init__(self, user_id, page: int = 0):
         super().__init__(timeout=180)
@@ -176,6 +190,32 @@ class ShopView(View):
         self.add_item(self.AddItemButton(self))
         self.add_item(self.FinalizeButton(self))
         self.add_item(self.ClearButton(self))
+
+    async def finalize(self, interaction: discord.Interaction):
+        users = load_users()
+        uid = self.user_id
+        if uid not in users:
+            await interaction.response.send_message("📭 Nie masz konta.", ephemeral=True)
+            return
+        ensure_user_fields(users[uid])
+        cart = carts.get(uid)
+        if not cart or (not cart.get("boosters") and not cart.get("items")):
+            await interaction.response.send_message("Koszyk jest pusty", ephemeral=True)
+            return
+        total = compute_cart_total(cart)
+        if users[uid].get("money", 0) < total:
+            await interaction.response.send_message("❌ Za mało monet", ephemeral=True)
+            return
+        users[uid]["money"] -= total
+        for sid, q in cart.get("boosters", {}).items():
+            users[uid]["boosters"].extend([sid] * q)
+        for iid, q in cart.get("items", {}).items():
+            if iid == "rare_boost":
+                users[uid]["rare_boost"] = users[uid].get("rare_boost", 0) + q
+        save_users(users)
+        carts.pop(uid, None)
+        await self.update()
+        await interaction.response.send_message(f"✅ Zakupiono za {total} monet", ephemeral=True)
 
     class PrevPageButton(Button):
         def __init__(self, parent):
@@ -232,8 +272,12 @@ class ShopView(View):
                     async def after_qty(i3, qty):
                         cart = carts.setdefault(self.parent.parent.user_id, {"boosters": {}, "items": {}})
                         cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
-                        await i3.response.send_message(f"Dodano {qty}x {set_name}", ephemeral=True)
                         await self.parent.parent.update()
+                        await i3.response.send_message(
+                            f"Dodano {qty}x {set_name}",
+                            ephemeral=True,
+                            view=QuickBuyView(self.parent.parent),
+                        )
 
                     modal = QuantityModal(after_qty)
                     await i2.response.send_modal(modal)
@@ -261,8 +305,12 @@ class ShopView(View):
                     async def after_qty(i3, qty):
                         cart = carts.setdefault(self.parent.parent.user_id, {"boosters": {}, "items": {}})
                         cart['items'][item_id] = cart['items'].get(item_id, 0) + qty
-                        await i3.response.send_message(f"Dodano {qty}x {item_name}", ephemeral=True)
                         await self.parent.parent.update()
+                        await i3.response.send_message(
+                            f"Dodano {qty}x {item_name}",
+                            ephemeral=True,
+                            view=QuickBuyView(self.parent.parent),
+                        )
 
                     modal = QuantityModal(after_qty)
                     await i2.response.send_modal(modal)
@@ -275,30 +323,7 @@ class ShopView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            users = load_users()
-            uid = self.parent.user_id
-            if uid not in users:
-                await interaction.response.send_message("📭 Nie masz konta.", ephemeral=True)
-                return
-            ensure_user_fields(users[uid])
-            cart = carts.get(uid)
-            if not cart or (not cart.get('boosters') and not cart.get('items')):
-                await interaction.response.send_message("Koszyk jest pusty", ephemeral=True)
-                return
-            total = compute_cart_total(cart)
-            if users[uid].get('money', 0) < total:
-                await interaction.response.send_message("❌ Za mało monet", ephemeral=True)
-                return
-            users[uid]['money'] -= total
-            for sid, q in cart.get('boosters', {}).items():
-                users[uid]['boosters'].extend([sid]*q)
-            for iid, q in cart.get('items', {}).items():
-                if iid == 'rare_boost':
-                    users[uid]['rare_boost'] = users[uid].get('rare_boost', 0) + q
-            save_users(users)
-            carts.pop(uid, None)
-            await self.parent.update()
-            await interaction.response.send_message(f"✅ Zakupiono za {total} monet", ephemeral=True)
+            await self.parent.finalize(interaction)
 
     class ClearButton(Button):
         def __init__(self, parent):
@@ -540,9 +565,13 @@ class CollectionMainView(View):
                     )
                     await interaction.response.edit_message(embed=embed, view=view)
 
-
-
-
+            view = SetDropdownView(self.user, sets, options)
+            embed = discord.Embed(
+                title="Twoje sety",
+                description="Wybierz set z listy poniżej",
+                color=discord.Color.orange(),
+            )
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
     class BoosterOpenButton(Button):
         def __init__(self, user, boosters_counter, all_sets):
             super().__init__(label="Otwórz boostery", style=discord.ButtonStyle.success)
