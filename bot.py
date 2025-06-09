@@ -22,8 +22,7 @@ import re
 from dotenv import load_dotenv
 import datetime
 
-USD_PLN = 4.00
-# Ile monet odpowiada jednemu dolarowi
+# Ile BoguckiCoinów odpowiada jednemu dolarowi
 COINS_PER_USD = 25
 
 # Prosty cache kart pobranych z API {set_id: {rarity: [cards]}}
@@ -46,8 +45,9 @@ def save_card_cache():
 
 EMBED_COLOR = discord.Color.dark_teal()
 
-def usd_to_pln(usd):
-    return usd * USD_PLN if usd else 0
+def usd_to_bc(usd: float) -> int:
+    """Przelicz dolary na BoguckiCoiny."""
+    return int(usd * COINS_PER_USD) if usd else 0
 
 # --- parametry ekonomii ---
 START_MONEY = 100
@@ -69,7 +69,9 @@ SHOP_CHANNEL_ID = DROP_CHANNEL_ID
 
 # Przedmioty dostępne w sklepie
 ITEMS = {
-    "rare_boost": {"name": "Rare Boost", "price": 200},
+    "rare_boost": {"name": "Rare Booster", "price": 200},
+    "name_tag": {"name": "Name Tag", "price": 50},
+    "double_daily": {"name": "Double Daily", "price": 300},
 }
 
 # Grafika tyłu karty używana w animacji odsłaniania
@@ -162,7 +164,7 @@ def build_cart_embed(user_id, message):
     cart = carts.get(user_id, {"boosters": {}, "items": {}})
     total = compute_cart_total(cart)
     embed = discord.Embed(title="Koszyk", description=message, color=EMBED_COLOR)
-    embed.set_thumbnail(url="attachment://koszyk.png")
+    embed.set_image(url="attachment://koszyk.png")
     embed.add_field(name="Wartość koszyka", value=f"{total} BC", inline=False)
     embed.add_field(name="Twoje saldo", value=f"{money} BC", inline=False)
     if money < total:
@@ -209,14 +211,17 @@ def build_shop_embed(user_id):
         ),
         color=EMBED_COLOR,
     )
-    embed.set_thumbnail(url="attachment://shop.png")
-    embed.set_author(name="BoguckiCoin (BC)", icon_url="attachment://coin.png")
+    embed.set_image(url="attachment://shop.png")
+    embed.set_footer(text="BoguckiCoin (BC)", icon_url="attachment://coin.png")
 
     if purchases:
         top = sorted(purchases.items(), key=lambda x: x[1], reverse=True)[:5]
         best_id, best_count = top[0]
-        best_name = next((s['name'] for s in sets if s['id'] == best_id), best_id)
+        best_set = next((s for s in sets if s['id'] == best_id), None)
+        best_name = best_set['name'] if best_set else best_id
         embed.set_image(url=booster_image_url(best_id))
+        if best_set and 'images' in best_set and 'logo' in best_set['images']:
+            embed.set_thumbnail(url=best_set['images']['logo'])
         embed.add_field(
             name=f"1. {best_name}",
             value=f"{best_count} sprzedanych",
@@ -313,8 +318,7 @@ class ShopView(View):
             data[sid] = data.get(sid, 0) + q
         save_data(data)
         for iid, q in cart.get("items", {}).items():
-            if iid == "rare_boost":
-                users[uid]["rare_boost"] = users[uid].get("rare_boost", 0) + q
+            users[uid][iid] = users[uid].get(iid, 0) + q
         save_users(users)
         carts.pop(uid, None)
         await self.update()
@@ -392,17 +396,17 @@ class ShopView(View):
                                     await i4.response.send_modal(modal)
 
                             embed = discord.Embed(title="Wybierz set", color=EMBED_COLOR)
-                            embed.set_thumbnail(url="attachment://wybierz_set.png")
+                            embed.set_image(url="attachment://wybierz_set.png")
                             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                             await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
 
                     embed = discord.Embed(title="Wybierz erę", color=EMBED_COLOR)
-                    embed.set_thumbnail(url="attachment://wybierz_set.png")
+                    embed.set_image(url="attachment://wybierz_set.png")
                     file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                     await i2.response.edit_message(embed=embed, view=EraView(self.parent.parent), attachments=[file])
 
             embed = discord.Embed(title="Wybierz język", color=EMBED_COLOR)
-            embed.set_thumbnail(url="attachment://wybierz_set.png")
+            embed.set_image(url="attachment://wybierz_set.png")
             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
             await interaction.response.send_message(embed=embed, view=LanguageView(self), ephemeral=True, file=file)
 
@@ -436,7 +440,7 @@ class ShopView(View):
                     await i2.response.send_modal(modal)
 
             embed = discord.Embed(title="Wybierz item", color=EMBED_COLOR)
-            embed.set_thumbnail(url="attachment://koszyk.png")
+            embed.set_image(url="attachment://koszyk.png")
             file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
             await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, file=file)
 
@@ -522,7 +526,7 @@ class CollectionMainView(View):
             ),
             color=EMBED_COLOR
         )
-        embed.set_thumbnail(url="attachment://kolekcja.png")
+        embed.set_image(url="attachment://kolekcja.png")
         if top5 and top5[0][1] > 0:
             najdrozsza_id = top5[0][0]
             img_url = ""
@@ -548,7 +552,7 @@ class CollectionMainView(View):
                 name=f"💎 Najcenniejsza karta",
                 value=(
                     f"{card_name} | `{ptcgo_code}` | #{card_number} x{top5[0][2]}\n"
-                    f"**{usd_to_pln(top5[0][1]):.2f} PLN**"
+                    f"**{usd_to_bc(top5[0][1])} BC**"
                 ),
                 inline=False
             )
@@ -569,12 +573,12 @@ class CollectionMainView(View):
                         break
                 opis += (
                     f"{idx}. {card_name} | `{ptcgo_code}` | #{card_number} x{cnt} "
-                    f"— **{usd_to_pln(price):.2f} PLN**\n"
+                    f"— **{usd_to_bc(price)} BC**\n"
                 )
             embed.add_field(name="Pozostałe z TOP 5:", value=opis, inline=False)
         hist = user.get("history", [])
         all_total_usd = sum(price * cnt for _, price, cnt in card_values)
-        all_total_pln = usd_to_pln(all_total_usd)
+        all_total_bc = usd_to_bc(all_total_usd)
         if len(hist) >= 2:
             diff = hist[-1]["total_usd"] - hist[-2]["total_usd"]
             if diff > 0:
@@ -588,7 +592,7 @@ class CollectionMainView(View):
         embed.add_field(
             name="Suma wartości kolekcji:",
             value=(
-                f"**{all_total_usd:.2f} USD** / **{all_total_pln:.2f} PLN**\n"
+                f"**{all_total_usd:.2f} USD** / **{all_total_bc} BC**\n"
                 f"Zmiana od ostatniej aktualizacji: {change}"
             ),
             inline=False
@@ -620,7 +624,7 @@ class CollectionMainView(View):
                 description="\n".join(lines),
                 color=EMBED_COLOR
             )
-            embed.set_thumbnail(url="attachment://sety.png")
+            embed.set_image(url="attachment://sety.png")
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
 
@@ -688,7 +692,7 @@ class CollectionMainView(View):
                 description="Wybierz set z listy poniżej",
                 color=EMBED_COLOR,
             )
-            embed.set_thumbnail(url="attachment://sety.png")
+            embed.set_image(url="attachment://sety.png")
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
     class BoosterOpenButton(Button):
@@ -756,11 +760,11 @@ async def build_set_embed(user, sets, set_id):
         ),
         color=EMBED_COLOR
     )
-    embed.set_thumbnail(url="attachment://sety.png")
+    embed.set_image(url="attachment://sety.png")
     if top5:
         lines = []
         for idx, (cid, name, price, url) in enumerate(top5):
-            lines.append(f"{idx+1}. {name} — {usd_to_pln(price):.2f} PLN")
+            lines.append(f"{idx+1}. {name} — {usd_to_bc(price)} BC")
         embed.add_field(
             name="🔝 **TOP 5 najdroższych kart**",
             value="\n".join(lines),
@@ -813,7 +817,7 @@ class CardRevealView(View):
         if price:
             embed.add_field(
                 name="Wartość rynkowa",
-                value=f"{price:.2f} USD ({usd_to_pln(price):.2f} PLN)",
+                value=f"{price:.2f} USD ({usd_to_bc(price)} BC)",
                 inline=True
             )
         else:
@@ -886,12 +890,12 @@ class CardRevealView(View):
                             if "market" in ver and ver["market"]:
                                 price = ver["market"]
                                 break
-                    price_pln = usd_to_pln(price or 0)
+                    price_bc = usd_to_bc(price or 0)
                     if drop_channel and (
                         "ultra" in rarity or
                         "secret" in rarity or
                         "special" in rarity or
-                        price_pln >= 20
+                        price_bc >= 20
                     ):
                         embed = discord.Embed(
                             title="🔥 WYJĄTKOWY DROP!",
@@ -899,7 +903,7 @@ class CardRevealView(View):
                                 f"{interaction.user.mention} trafił/a **{card['name']}**\n"
                                 f"`{card.get('set', {}).get('ptcgoCode', '-')}` | #{card.get('number', '-')}\n"
                                 f"Rzadkość: {card.get('rarity', 'Unknown')}\n"
-                                f"Wartość: **{price_pln:.2f} PLN**"
+                                f"Wartość: **{price_bc} BC**"
                             ),
                             color=discord.Color.gold()
                         )
@@ -917,9 +921,9 @@ class CardRevealView(View):
                                 break
                     if price:
                         total_usd += price
-                total_pln = usd_to_pln(total_usd)
+                total_bc = usd_to_bc(total_usd)
                 podsumowanie = (
-                    f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({total_pln:.2f} PLN)"
+                    f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({total_bc} BC)"
                 )
                 class AfterBoosterView(View):
                     @discord.ui.button(label="Przejdź do kolekcji", style=discord.ButtonStyle.primary)
@@ -1169,7 +1173,7 @@ async def ranking_cmd(interaction: discord.Interaction):
         if best and best.get("week") == week and best.get("year") == year:
             entries.append((uid, best.get("price", 0)))
     top3 = sorted(entries, key=lambda x: x[1], reverse=True)[:3]
-    lines = [f"{idx+1}. <@{uid}> - {usd_to_pln(price):.2f} PLN" for idx,(uid,price) in enumerate(top3)]
+    lines = [f"{idx+1}. <@{uid}> - {usd_to_bc(price)} BC" for idx,(uid,price) in enumerate(top3)]
     if not lines:
         lines = ["Brak danych"]
     embed = discord.Embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
