@@ -36,7 +36,7 @@ def ensure_user_fields(user):
     user.setdefault("money", 0)
     user.setdefault("last_daily", 0)
     user.setdefault("daily_streak", 0)
-    user.setdefault("weekly_best", {"week": 0, "year": 0, "price": 0})
+    user.setdefault("weekly_best", {"week": 0, "year": 0, "price": 0, "name": ""})
     user.setdefault("achievements", [])
     return user
 
