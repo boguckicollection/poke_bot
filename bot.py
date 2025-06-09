@@ -542,7 +542,7 @@ class CollectionMainView(View):
 
                     self.add_item(SetDropdownSelect(self, options))
                     if selected_set_id:
-                        self.add_item(ViewCardsButton(user, sets, selected_set_id))
+                        self.add_item(CollectionMainView.ViewCardsButton(user, sets, selected_set_id))
 
 
             class SetDropdownSelect(Select):
