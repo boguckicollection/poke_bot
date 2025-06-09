@@ -3,7 +3,7 @@ import random
 import asyncio
 from datetime import datetime, timezone, timedelta
 from discord.ui import Modal, View, TextInput, Button
-from utils import load_users, save_users, get_all_sets
+from poke_utils import load_users, save_users, get_all_sets
 
 EMBED_COLOR = discord.Color.dark_teal()
 

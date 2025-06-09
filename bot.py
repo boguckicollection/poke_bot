@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ui import View, Button, Modal, TextInput, select, Select
 from giveaway import GiveawayModal, GiveawayView, parse_time_string
-from utils import (
+from poke_utils import (
     load_users,
     save_users,
     get_all_sets,
@@ -147,7 +147,7 @@ def build_cart_embed(user_id, message):
     cart = carts.get(user_id, {"boosters": {}, "items": {}})
     total = compute_cart_total(cart)
     embed = discord.Embed(title="Koszyk", description=message, color=EMBED_COLOR)
-    embed.set_image(url="attachment://koszyk.png")
+    embed.set_thumbnail(url="attachment://koszyk.png")
     embed.add_field(name="Wartość koszyka", value=f"{total} monet", inline=False)
     embed.add_field(name="Twoje saldo", value=f"{money} monet", inline=False)
     if money < total:
@@ -191,7 +191,7 @@ def build_shop_embed(user_id, page: int = 0):
         description="Użyj przycisków poniżej, aby dodać produkty do koszyka.",
         color=EMBED_COLOR,
     )
-    embed.set_image(url="attachment://shop.png")
+    embed.set_thumbnail(url="attachment://shop.png")
 
     start = page * 10
     page_sets = sets[start:start + 10]
@@ -401,17 +401,17 @@ class ShopView(View):
                                     await i4.response.send_modal(modal)
 
                             embed = discord.Embed(title="Wybierz set", color=EMBED_COLOR)
-                            embed.set_image(url="attachment://wybierz_set.png")
+                            embed.set_thumbnail(url="attachment://wybierz_set.png")
                             file = discord.File("graphic/wybierz_set.png", filename="wybierz_set.png")
                             await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
 
                     embed = discord.Embed(title="Wybierz erę", color=EMBED_COLOR)
-                    embed.set_image(url="attachment://wybierz_set.png")
+                    embed.set_thumbnail(url="attachment://wybierz_set.png")
                     file = discord.File("graphic/wybierz_set.png", filename="wybierz_set.png")
                     await i2.response.edit_message(embed=embed, view=EraView(self.parent.parent), attachments=[file])
 
             embed = discord.Embed(title="Wybierz język", color=EMBED_COLOR)
-            embed.set_image(url="attachment://wybierz_set.png")
+            embed.set_thumbnail(url="attachment://wybierz_set.png")
             file = discord.File("graphic/wybierz_set.png", filename="wybierz_set.png")
             await interaction.response.send_message(embed=embed, view=LanguageView(self), ephemeral=True, file=file)
 
@@ -445,7 +445,7 @@ class ShopView(View):
                     await i2.response.send_modal(modal)
 
             embed = discord.Embed(title="Wybierz item", color=EMBED_COLOR)
-            embed.set_image(url="attachment://koszyk.png")
+            embed.set_thumbnail(url="attachment://koszyk.png")
             file = discord.File("graphic/koszyk.png", filename="koszyk.png")
             await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, file=file)
 
@@ -533,7 +533,7 @@ class CollectionMainView(View):
             ),
             color=EMBED_COLOR
         )
-        embed.set_image(url="attachment://kolekcja.png")
+        embed.set_thumbnail(url="attachment://kolekcja.png")
         if top5 and top5[0][1] > 0:
             najdrozsza_id = top5[0][0]
             img_url = ""
@@ -631,7 +631,7 @@ class CollectionMainView(View):
                 description="\n".join(lines),
                 color=EMBED_COLOR
             )
-            embed.set_image(url="attachment://sety.png")
+            embed.set_thumbnail(url="attachment://sety.png")
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
     class SetViewButton(Button):
@@ -698,7 +698,7 @@ class CollectionMainView(View):
                 description="Wybierz set z listy poniżej",
                 color=EMBED_COLOR,
             )
-            embed.set_image(url="attachment://sety.png")
+            embed.set_thumbnail(url="attachment://sety.png")
             file = discord.File("graphic/sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
     class BoosterOpenButton(Button):
@@ -766,7 +766,7 @@ async def build_set_embed(user, sets, set_id):
         ),
         color=EMBED_COLOR
     )
-    embed.set_image(url="attachment://sety.png")
+    embed.set_thumbnail(url="attachment://sety.png")
     if top5:
         lines = []
         for idx, (cid, name, price, url) in enumerate(top5):

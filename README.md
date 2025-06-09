@@ -1,12 +1,11 @@
 # Poké Booster Bot
 
-![Logo](graphic/logo.png)
+<img src="graphic/logo.png" alt="Logo" width="200"/>
 
 Polski bot Discord do kolekcjonowania kart Pokémon i otwierania wirtualnych boosterów.
 Korzysta z [Pokemon TCG API](https://pokemontcg.io/) i pozwala zbierać karty,
 wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 
-![Card back](https://images.pokemontcg.io/other/official-backs/2021.jpg)
 
 ## Funkcje
 
@@ -46,6 +45,8 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 - `/kolekcja` – wyświetla Twoją kolekcję kart i boosterów.
 - `/osiagniecia` – lista zdobytych osiągnięć.
 - `/ranking` – najlepsze dropy tygodnia.
+- `/otworz` – otwórz posiadane boostery i odsłaniaj karty jedna po drugiej.
+- `/giveaway` – stwórz losowanie boosterów (administrator).
 
 Poniżej przykład grafiki jednego z setów dostępnych w sklepie:
 
@@ -59,6 +60,8 @@ adresów, aby pokazywać obrazki boosterów w sklepie.
 
 - `users.json` – lokalna baza kont użytkowników i ich kolekcji.
 - `sets.json` – lista setów pobierana z API; aktualizuje się automatycznie.
+- `price.json` – zapisane ceny boosterów w monetach.
+- `data.json` – statystyki zakupów i inne dane pomocnicze.
 
 Przed pierwszym uruchomieniem bota pliki te mogą być puste. Bot sam pobierze
 niezbędne dane.
