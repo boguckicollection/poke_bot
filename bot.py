@@ -155,7 +155,7 @@ def build_cart_embed(user_id, message):
     return embed
 
 def current_week_info():
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.UTC)
     week = now.isocalendar()[1]
     year = now.isocalendar()[0]
     return week, year
@@ -1072,7 +1072,7 @@ async def daily(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-    now = datetime.datetime.utcnow().timestamp()
+    now = datetime.datetime.now(datetime.UTC).timestamp()
     last = users[uid].get("last_daily", 0)
     if now - last < DAILY_COOLDOWN:
         remaining = int(DAILY_COOLDOWN - (now - last))
