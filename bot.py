@@ -210,11 +210,15 @@ def current_week_info():
     year = now.isocalendar()[0]
     return week, year
 
-def update_weekly_best(user, price):
+def update_weekly_best(user, price, name):
     week, year = current_week_info()
     best = user.get("weekly_best", {})
-    if best.get("week") != week or best.get("year") != year or price > best.get("price", 0):
-        user["weekly_best"] = {"week": week, "year": year, "price": price}
+    if (
+        best.get("week") != week
+        or best.get("year") != year
+        or price > best.get("price", 0)
+    ):
+        user["weekly_best"] = {"week": week, "year": year, "price": price, "name": name}
 
 def check_master_set(user, set_id, all_sets):
     set_info = next((s for s in all_sets if s["id"] == set_id), None)
@@ -451,7 +455,7 @@ class ShopView(View):
                                         await shop_view.update()
                                         embed = build_cart_embed(shop_view.user_id, f"Dodano {qty}x {set_name}")
                                         file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
-                                        await i5.response.send_message(embed=embed, view=QuickBuyView(shop_view), ephemeral=True, file=file)
+                                        await i5.response.send_message(embed=embed, view=QuickBuyView(shop_view), ephemeral=True, files=[file])
 
                                     modal = QuantityModal(after_qty)
                                     await i4.response.send_modal(modal)
@@ -495,7 +499,7 @@ class ShopView(View):
                         await self.parent.parent.update()
                         embed = build_cart_embed(self.parent.parent.user_id, f"Dodano {qty}x {item_name}")
                         file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
-                        await i3.response.send_message(embed=embed, view=QuickBuyView(self.parent.parent), ephemeral=True, file=file)
+                        await i3.response.send_message(embed=embed, view=QuickBuyView(self.parent.parent), ephemeral=True, files=[file])
 
                     modal = QuantityModal(after_qty)
                     await i2.response.send_modal(modal)
@@ -503,7 +507,7 @@ class ShopView(View):
             embed = discord.Embed(title="Wybierz item", color=EMBED_COLOR)
             embed.set_image(url="attachment://koszyk.png")
             file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
-            await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, file=file)
+            await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, files=[file])
 
     class ClearButton(Button):
         def __init__(self, parent):
@@ -526,6 +530,7 @@ class MyClient(discord.Client):
             self._synced = True
         await fetch_and_save_sets()
         self.loop.create_task(self.shop_update_loop())
+        self.loop.create_task(self.weekly_ranking_loop())
         print(f"✅ Zalogowano jako {self.user} (ID: {self.user.id})")
 
     async def shop_update_loop(self):
@@ -538,6 +543,50 @@ class MyClient(discord.Client):
                     names = ", ".join(s["name"] for s in new_sets)
                     await channel.send(f"🆕 Nowe sety w sklepie: {names}")
             await asyncio.sleep(24 * 3600)
+
+    async def weekly_ranking_loop(self):
+        await self.wait_until_ready()
+        processed = None
+        while not self.is_closed():
+            week, year = current_week_info()
+            now = datetime.datetime.now(datetime.UTC)
+            if now.weekday() == 6 and processed != (week, year):
+                users = load_users()
+                entries = []
+                for uid, data in users.items():
+                    ensure_user_fields(data)
+                    best = data.get("weekly_best")
+                    if (
+                        best
+                        and best.get("week") == week
+                        and best.get("year") == year
+                        and best.get("price", 0) > 0
+                    ):
+                        entries.append((uid, best.get("price", 0), best.get("name", "")))
+                top3 = sorted(entries, key=lambda x: x[1], reverse=True)[:3]
+                lines = []
+                changed = False
+                for idx, (uid, price, name) in enumerate(top3):
+                    reward = (3 - idx) * 50
+                    users[uid]["money"] = users[uid].get("money", 0) + reward
+                    bc = usd_to_bc(price)
+                    lines.append(f"{idx+1}. <@{uid}> - {name} ({bc} BC {COIN_EMOJI})")
+                    if "top3_week" not in users[uid].get("achievements", []):
+                        users[uid].setdefault("achievements", []).append("top3_week")
+                    changed = True
+                if lines:
+                    embed = discord.Embed(
+                        title="TOP 3 dropy tygodnia",
+                        description="\n".join(lines),
+                        color=discord.Color.purple(),
+                    )
+                    channel = self.get_channel(DROP_CHANNEL_ID)
+                    if channel:
+                        await channel.send(embed=embed)
+                if changed:
+                    save_users(users)
+                processed = (week, year)
+            await asyncio.sleep(3600)
 
 client = MyClient()
 
@@ -918,6 +967,7 @@ class CardRevealView(View):
             if uid in users:
                 ensure_user_fields(users[uid])
                 max_price = 0
+                max_name = ""
                 for card in self.parent.cards:
                     price = None
                     if "tcgplayer" in card and "prices" in card["tcgplayer"]:
@@ -936,7 +986,8 @@ class CardRevealView(View):
                     })
                     if price and price > max_price:
                         max_price = price
-                update_weekly_best(users[uid], max_price)
+                        max_name = card["name"]
+                update_weekly_best(users[uid], max_price, max_name)
                 all_sets = get_all_sets()
                 check_master_set(users[uid], self.parent.set_id, all_sets)
                 save_users(users)
@@ -944,7 +995,7 @@ class CardRevealView(View):
                 if hasattr(interaction, "guild") and interaction.guild:
                     drop_channel = interaction.guild.get_channel(DROP_CHANNEL_ID)
                 for card in self.parent.cards:
-                    rarity = card.get("rarity", "").lower()
+                    rarity = card.get("rarity", "")
                     price = None
                     if "tcgplayer" in card and "prices" in card["tcgplayer"]:
                         for ver in card["tcgplayer"]["prices"].values():
@@ -952,12 +1003,7 @@ class CardRevealView(View):
                                 price = ver["market"]
                                 break
                     price_bc = usd_to_bc(price or 0)
-                    if drop_channel and (
-                        "ultra" in rarity or
-                        "secret" in rarity or
-                        "special" in rarity or
-                        price_bc >= 20
-                    ):
+                    if drop_channel and rarity in RAREST_TYPES:
                         embed = discord.Embed(
                             title="🔥 WYJĄTKOWY DROP!",
                             description=(
@@ -1251,9 +1297,12 @@ async def ranking_cmd(interaction: discord.Interaction):
         ensure_user_fields(udata)
         best = udata.get("weekly_best")
         if best and best.get("week") == week and best.get("year") == year:
-            entries.append((uid, best.get("price", 0)))
+            entries.append((uid, best.get("price", 0), best.get("name", "")))
     top3 = sorted(entries, key=lambda x: x[1], reverse=True)[:3]
-    lines = [f"{idx+1}. <@{uid}> - {usd_to_bc(price)} BC {COIN_EMOJI}" for idx,(uid,price) in enumerate(top3)]
+    lines = [
+        f"{idx+1}. <@{uid}> - {name} ({usd_to_bc(price)} BC {COIN_EMOJI})"
+        for idx, (uid, price, name) in enumerate(top3)
+    ]
     if not lines:
         lines = ["Brak danych"]
     embed = discord.Embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
