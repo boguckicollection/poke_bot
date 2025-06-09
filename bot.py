@@ -303,8 +303,9 @@ class ShopView(View):
                     era_opts = [discord.SelectOption(label=e, value=e) for e in eras]
 
                     class EraView(View):
-                        def __init__(self):
+                        def __init__(self, shop_view):
                             super().__init__(timeout=60)
+                            self.shop_view = shop_view
 
                         @select(placeholder="Wybierz erę", options=era_opts)
                         async def select_era(self, i3: discord.Interaction, menu_era: discord.ui.Select):
@@ -313,21 +314,22 @@ class ShopView(View):
                             set_opts = [discord.SelectOption(label=s['name'], value=s['id']) for s in sets_list[:25]]
 
                             class SetView(View):
-                                def __init__(self):
+                                def __init__(self, shop_view):
                                     super().__init__(timeout=60)
+                                    self.shop_view = shop_view
 
                                 @select(placeholder="Wybierz set", options=set_opts)
                                 async def select_set(self, i4: discord.Interaction, menu_set: discord.ui.Select):
                                     set_id = menu_set.values[0]
                                     set_name = next((s['name'] for s in sets_list if s['id']==set_id), set_id)
 
-                                    async def after_qty(i5, qty):
-                                        cart = carts.setdefault(self.parent.parent.parent.user_id, {"boosters": {}, "items": {}})
+                                    async def after_qty(i5, qty, shop_view=self.shop_view):
+                                        cart = carts.setdefault(shop_view.user_id, {"boosters": {}, "items": {}})
                                         cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
-                                        await self.parent.parent.parent.update()
-                                        embed = build_cart_embed(self.parent.parent.parent.user_id, f"Dodano {qty}x {set_name}")
+                                        await shop_view.update()
+                                        embed = build_cart_embed(shop_view.user_id, f"Dodano {qty}x {set_name}")
                                         file = discord.File("graphic/sklep.png", filename="sklep.png")
-                                        await i5.response.send_message(embed=embed, view=QuickBuyView(self.parent.parent.parent), ephemeral=True, file=file)
+                                        await i5.response.send_message(embed=embed, view=QuickBuyView(shop_view), ephemeral=True, file=file)
 
                                     modal = QuantityModal(after_qty)
                                     await i4.response.send_modal(modal)
@@ -335,12 +337,12 @@ class ShopView(View):
                             embed = discord.Embed(title="Wybierz set", color=EMBED_COLOR)
                             embed.set_thumbnail(url="attachment://sety.png")
                             file = discord.File("graphic/sety.png", filename="sety.png")
-                            await i3.response.edit_message(embed=embed, view=SetView(), attachments=[file])
+                            await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
 
                     embed = discord.Embed(title="Wybierz erę", color=EMBED_COLOR)
                     embed.set_thumbnail(url="attachment://sety.png")
                     file = discord.File("graphic/sety.png", filename="sety.png")
-                    await i2.response.edit_message(embed=embed, view=EraView(), attachments=[file])
+                    await i2.response.edit_message(embed=embed, view=EraView(self.parent.parent), attachments=[file])
 
             embed = discord.Embed(title="Wybierz język", color=EMBED_COLOR)
             embed.set_thumbnail(url="attachment://sety.png")
