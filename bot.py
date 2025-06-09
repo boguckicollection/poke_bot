@@ -14,6 +14,9 @@ from dotenv import load_dotenv
 import datetime
 
 USD_PLN = 4.00
+
+EMBED_COLOR = discord.Color.dark_teal()
+
 def usd_to_pln(usd):
     return usd * USD_PLN if usd else 0
 
@@ -86,10 +89,33 @@ def booster_image_url(set_id: str) -> str:
     """Return the URL of the booster pack image for a given set."""
     return f"https://images.pokemontcg.io/{set_id}/booster.png"
 
+def group_sets_by_language_and_series():
+    sets = get_all_sets()
+    result = {}
+    for s in sets:
+        lang = "Angielski"
+        # Prosta heurystyka - można rozbudować przy realnych danych
+        result.setdefault(lang, {}).setdefault(s["series"], []).append(s)
+    return result
+
 def compute_cart_total(cart):
     total = sum(q * BOOSTER_PRICE for q in cart.get("boosters", {}).values())
     total += sum(q * ITEMS[i]["price"] for i, q in cart.get("items", {}).items())
     return total
+
+def build_cart_embed(user_id, message):
+    users = load_users()
+    user = users.get(user_id, {})
+    money = user.get("money", 0)
+    cart = carts.get(user_id, {"boosters": {}, "items": {}})
+    total = compute_cart_total(cart)
+    embed = discord.Embed(title="Koszyk", description=message, color=EMBED_COLOR)
+    embed.set_thumbnail(url="attachment://sklep.png")
+    embed.add_field(name="Wartość koszyka", value=f"{total} monet", inline=False)
+    embed.add_field(name="Twoje saldo", value=f"{money} monet", inline=False)
+    if money < total:
+        embed.add_field(name="Brakuje środków", value="Nie masz wystarczającej liczby monet!", inline=False)
+    return embed
 
 def current_week_info():
     now = datetime.datetime.utcnow()
@@ -125,7 +151,7 @@ def build_shop_embed(user_id, page: int = 0):
     embed = discord.Embed(
         title="Sklep",
         description="Użyj przycisków poniżej, aby dodać produkty do koszyka.",
-        color=discord.Color.gold(),
+        color=EMBED_COLOR,
     )
     embed.set_thumbnail(url="attachment://shop.png")
 
@@ -174,9 +200,15 @@ class QuickBuyView(View):
         super().__init__(timeout=60)
         self.shop_view = shop_view
 
-    @discord.ui.button(label="Kup teraz", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="Kup", style=discord.ButtonStyle.success)
     async def finalize(self, interaction: discord.Interaction, button: Button):
         await self.shop_view.finalize(interaction)
+
+    @discord.ui.button(label="Wyczyść koszyk", style=discord.ButtonStyle.danger)
+    async def clear(self, interaction: discord.Interaction, button: Button):
+        carts.pop(self.shop_view.user_id, None)
+        await self.shop_view.update()
+        await interaction.response.send_message("Koszyk wyczyszczony", ephemeral=True)
 
 class ShopView(View):
     def __init__(self, user_id, page: int = 0):
@@ -188,7 +220,6 @@ class ShopView(View):
         self.add_item(self.NextPageButton(self))
         self.add_item(self.AddBoosterButton(self))
         self.add_item(self.AddItemButton(self))
-        self.add_item(self.FinalizeButton(self))
         self.add_item(self.ClearButton(self))
 
     async def finalize(self, interaction: discord.Interaction):
@@ -256,33 +287,65 @@ class ShopView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            sets = get_all_sets()
-            options = [discord.SelectOption(label=s['name'], value=s['id']) for s in sets[:25]]
+            groups = group_sets_by_language_and_series()
 
-            class BoosterSelectView(View):
+            lang_options = [discord.SelectOption(label=lang, value=lang) for lang in groups]
+
+            class LanguageView(View):
                 def __init__(self, parent):
                     super().__init__(timeout=60)
                     self.parent = parent
 
-                @select(placeholder="Wybierz booster", options=options)
-                async def select_cb(self, i2: discord.Interaction, select: discord.ui.Select):
-                    set_id = select.values[0]
-                    set_name = next((s['name'] for s in sets if s['id']==set_id), set_id)
+                @select(placeholder="Wybierz język", options=lang_options)
+                async def select_lang(self, i2: discord.Interaction, select: discord.ui.Select):
+                    lang = select.values[0]
+                    eras = groups.get(lang, {})
+                    era_opts = [discord.SelectOption(label=e, value=e) for e in eras]
 
-                    async def after_qty(i3, qty):
-                        cart = carts.setdefault(self.parent.parent.user_id, {"boosters": {}, "items": {}})
-                        cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
-                        await self.parent.parent.update()
-                        await i3.response.send_message(
-                            f"Dodano {qty}x {set_name}",
-                            ephemeral=True,
-                            view=QuickBuyView(self.parent.parent),
-                        )
+                    class EraView(View):
+                        def __init__(self):
+                            super().__init__(timeout=60)
 
-                    modal = QuantityModal(after_qty)
-                    await i2.response.send_modal(modal)
+                        @select(placeholder="Wybierz erę", options=era_opts)
+                        async def select_era(self, i3: discord.Interaction, select2: discord.ui.Select):
+                            era = select2.values[0]
+                            sets_list = eras.get(era, [])
+                            set_opts = [discord.SelectOption(label=s['name'], value=s['id']) for s in sets_list[:25]]
 
-            await interaction.response.send_message(view=BoosterSelectView(self), ephemeral=True)
+                            class SetView(View):
+                                def __init__(self):
+                                    super().__init__(timeout=60)
+
+                                @select(placeholder="Wybierz set", options=set_opts)
+                                async def select_set(self, i4: discord.Interaction, select3: discord.ui.Select):
+                                    set_id = select3.values[0]
+                                    set_name = next((s['name'] for s in sets_list if s['id']==set_id), set_id)
+
+                                    async def after_qty(i5, qty):
+                                        cart = carts.setdefault(self.parent.parent.parent.user_id, {"boosters": {}, "items": {}})
+                                        cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
+                                        await self.parent.parent.parent.update()
+                                        embed = build_cart_embed(self.parent.parent.parent.user_id, f"Dodano {qty}x {set_name}")
+                                        file = discord.File("graphic/sklep.png", filename="sklep.png")
+                                        await i5.response.send_message(embed=embed, view=QuickBuyView(self.parent.parent.parent), ephemeral=True, file=file)
+
+                                    modal = QuantityModal(after_qty)
+                                    await i4.response.send_modal(modal)
+
+                            embed = discord.Embed(title="Wybierz set", color=EMBED_COLOR)
+                            embed.set_thumbnail(url="attachment://sety.png")
+                            file = discord.File("graphic/sety.png", filename="sety.png")
+                            await i3.response.edit_message(embed=embed, view=SetView(), attachments=[file])
+
+                    embed = discord.Embed(title="Wybierz erę", color=EMBED_COLOR)
+                    embed.set_thumbnail(url="attachment://sety.png")
+                    file = discord.File("graphic/sety.png", filename="sety.png")
+                    await i2.response.edit_message(embed=embed, view=EraView(), attachments=[file])
+
+            embed = discord.Embed(title="Wybierz język", color=EMBED_COLOR)
+            embed.set_thumbnail(url="attachment://sety.png")
+            file = discord.File("graphic/sety.png", filename="sety.png")
+            await interaction.response.send_message(embed=embed, view=LanguageView(self), ephemeral=True, file=file)
 
     class AddItemButton(Button):
         def __init__(self, parent):
@@ -306,24 +369,17 @@ class ShopView(View):
                         cart = carts.setdefault(self.parent.parent.user_id, {"boosters": {}, "items": {}})
                         cart['items'][item_id] = cart['items'].get(item_id, 0) + qty
                         await self.parent.parent.update()
-                        await i3.response.send_message(
-                            f"Dodano {qty}x {item_name}",
-                            ephemeral=True,
-                            view=QuickBuyView(self.parent.parent),
-                        )
+                        embed = build_cart_embed(self.parent.parent.user_id, f"Dodano {qty}x {item_name}")
+                        file = discord.File("graphic/sklep.png", filename="sklep.png")
+                        await i3.response.send_message(embed=embed, view=QuickBuyView(self.parent.parent), ephemeral=True, file=file)
 
                     modal = QuantityModal(after_qty)
                     await i2.response.send_modal(modal)
 
-            await interaction.response.send_message(view=ItemSelectView(self), ephemeral=True)
-
-    class FinalizeButton(Button):
-        def __init__(self, parent):
-            super().__init__(label="Kup", style=discord.ButtonStyle.success)
-            self.parent = parent
-
-        async def callback(self, interaction: discord.Interaction):
-            await self.parent.finalize(interaction)
+            embed = discord.Embed(title="Wybierz item", color=EMBED_COLOR)
+            embed.set_thumbnail(url="attachment://sklep.png")
+            file = discord.File("graphic/sklep.png", filename="sklep.png")
+            await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, file=file)
 
     class ClearButton(Button):
         def __init__(self, parent):
@@ -407,8 +463,9 @@ class CollectionMainView(View):
                 f"Masz **{total_cards} kart** (*{unique_cards} unikalnych*)\n"
                 f"Masz **{total_boosters} boosterów** do otwarcia"
             ),
-            color=discord.Color.blurple()
+            color=EMBED_COLOR
         )
+        embed.set_thumbnail(url="attachment://kolekcja.png")
         if top5 and top5[0][1] > 0:
             najdrozsza_id = top5[0][0]
             img_url = ""
@@ -504,8 +561,9 @@ class CollectionMainView(View):
             embed = discord.Embed(
                 title="Twoje karty z zestawu",
                 description="\n".join(lines),
-                color=discord.Color.teal()
+                color=EMBED_COLOR
             )
+            embed.set_thumbnail(url="attachment://sety.png")
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
     class SetViewButton(Button):
@@ -563,15 +621,18 @@ class CollectionMainView(View):
                         options=self.parent_view.options,
                         selected_set_id=set_id,
                     )
-                    await interaction.response.edit_message(embed=embed, view=view)
+                    file = discord.File("graphic/sety.png", filename="sety.png")
+                    await interaction.response.edit_message(embed=embed, view=view, attachments=[file])
 
             view = SetDropdownView(self.user, sets, options)
             embed = discord.Embed(
                 title="Twoje sety",
                 description="Wybierz set z listy poniżej",
-                color=discord.Color.orange(),
+                color=EMBED_COLOR,
             )
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            embed.set_thumbnail(url="attachment://sety.png")
+            file = discord.File("graphic/sety.png", filename="sety.png")
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
     class BoosterOpenButton(Button):
         def __init__(self, user, boosters_counter, all_sets):
             super().__init__(label="Otwórz boostery", style=discord.ButtonStyle.success)
@@ -635,10 +696,9 @@ async def build_set_embed(user, sets, set_id):
             f"Masz {owned}/{total_cards} kart ({percent:.1f}%)\n"
             f"{bar}"
         ),
-        color=discord.Color.orange()
+        color=EMBED_COLOR
     )
-    if set_obj.get("images", {}).get("logo"):
-        embed.set_thumbnail(url=set_obj["images"]["logo"])
+    embed.set_thumbnail(url="attachment://sety.png")
     if top5:
         lines = []
         for idx, (cid, name, price, url) in enumerate(top5):
@@ -916,7 +976,8 @@ async def kolekcja(interaction: discord.Interaction):
     boosters_counter = Counter(user["boosters"])
     view = CollectionMainView(user, boosters_counter, all_sets)
     embed = await view.build_summary_embed()
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    file = discord.File("graphic/kolekcja.png", filename="kolekcja.png")
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
 
 # --- KOMENDA SALDO ---
 @client.tree.command(name="saldo", description="Sprawdź ilość posiadanych monet")
