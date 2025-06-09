@@ -23,7 +23,9 @@ from dotenv import load_dotenv
 import datetime
 
 # Ile BoguckiCoinów odpowiada jednemu dolarowi
-COINS_PER_USD = 25
+# Przyjęto nieco niższy przelicznik, aby zbilansować
+# ceny w sklepie względem dziennych nagród
+COINS_PER_USD = 20
 
 # Prosty cache kart pobranych z API {set_id: {rarity: [cards]}}
 CARD_CACHE = {}
@@ -69,9 +71,26 @@ SHOP_CHANNEL_ID = DROP_CHANNEL_ID
 
 # Przedmioty dostępne w sklepie
 ITEMS = {
-    "rare_boost": {"name": "Rare Booster", "price": 200},
-    "name_tag": {"name": "Name Tag", "price": 50},
-    "double_daily": {"name": "Double Daily", "price": 300},
+    "rare_boost": {
+        "name": "Rare Booster",
+        "price": 200,
+        "desc": "Zwiększa szansę na rzadkie karty w następnym boosterze",
+    },
+    "double_daily": {
+        "name": "Double Daily",
+        "price": 300,
+        "desc": "Przez 7 dni podwaja monety z komendy /daily",
+    },
+    "mystery_booster": {
+        "name": "Mystery Booster",
+        "price": 120,
+        "desc": "Natychmiast daje losowy booster",
+    },
+    "streak_freeze": {
+        "name": "Streak Freeze",
+        "price": 150,
+        "desc": "Utrzymuje serię daily gdy raz ją pominiesz",
+    },
 }
 
 # Grafika tyłu karty używana w animacji odsłaniania
@@ -83,6 +102,8 @@ CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000
 SHOP_IMAGE_PATH = GRAPHIC_DIR / "shop.png"
 # Ikona waluty
 COIN_IMAGE_PATH = GRAPHIC_DIR / "coin.png"
+# Emoji waluty używane w komunikatach
+COIN_EMOJI = ":bc_coin:"
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
@@ -165,8 +186,8 @@ def build_cart_embed(user_id, message):
     total = compute_cart_total(cart)
     embed = discord.Embed(title="Koszyk", description=message, color=EMBED_COLOR)
     embed.set_image(url="attachment://koszyk.png")
-    embed.add_field(name="Wartość koszyka", value=f"{total} BC", inline=False)
-    embed.add_field(name="Twoje saldo", value=f"{money} BC", inline=False)
+    embed.add_field(name="Wartość koszyka", value=f"{total} BC {COIN_EMOJI}", inline=False)
+    embed.add_field(name="Twoje saldo", value=f"{money} BC {COIN_EMOJI}", inline=False)
     if money < total:
         embed.add_field(name="Brakuje środków", value="Nie masz wystarczającej liczby BC!", inline=False)
     return embed
@@ -222,6 +243,7 @@ def build_shop_embed(user_id):
         embed.set_image(url=booster_image_url(best_id))
         if best_set and 'images' in best_set and 'logo' in best_set['images']:
             embed.set_thumbnail(url=best_set['images']['logo'])
+        embed.add_field(name="🏅 Najpopularniejszy booster", value="\u200b", inline=False)
         embed.add_field(
             name=f"1. {best_name}",
             value=f"{best_count} sprzedanych",
@@ -237,7 +259,10 @@ def build_shop_embed(user_id):
                 value="\n".join(lines),
                 inline=False,
             )
-    items_desc = [f"{info['name']} - {info['price']} BC" for info in ITEMS.values()]
+    items_desc = [
+        f"{info['name']} - {info['price']} BC {COIN_EMOJI} \u2014 {info['desc']}"
+        for info in ITEMS.values()
+    ]
     embed.add_field(name="Dostępne itemy", value="\n".join(items_desc) or "Brak", inline=False)
     cart = carts.get(user_id)
     if cart and (cart.get("boosters") or cart.get("items")):
@@ -248,7 +273,7 @@ def build_shop_embed(user_id):
         for iid, q in cart.get("items", {}).items():
             lines.append(f"{ITEMS[iid]['name']} x{q}")
         total = compute_cart_total(cart)
-        lines.append(f"**Razem: {total} BC**")
+        lines.append(f"**Razem: {total} BC {COIN_EMOJI}**")
         embed.add_field(name="Koszyk", value="\n".join(lines), inline=False)
     return embed
 
@@ -317,12 +342,27 @@ class ShopView(View):
             users[uid]["boosters"].extend([sid] * q)
             data[sid] = data.get(sid, 0) + q
         save_data(data)
+        now_ts = datetime.datetime.now(datetime.UTC).timestamp()
         for iid, q in cart.get("items", {}).items():
-            users[uid][iid] = users[uid].get(iid, 0) + q
+            if iid == "double_daily":
+                end = users[uid].get("double_daily_until", 0)
+                start_from = max(end, now_ts)
+                users[uid]["double_daily_until"] = start_from + 7 * 24 * 3600 * q
+            elif iid == "mystery_booster":
+                sets = get_all_sets()
+                for _ in range(q):
+                    chosen = random.choice(sets)
+                    sid = chosen["id"]
+                    users[uid]["boosters"].append(sid)
+                    data[sid] = data.get(sid, 0) + 1
+            elif iid == "streak_freeze":
+                users[uid]["streak_freeze"] = users[uid].get("streak_freeze", 0) + q
+            else:
+                users[uid][iid] = users[uid].get(iid, 0) + q
         save_users(users)
         carts.pop(uid, None)
         await self.update()
-        await interaction.response.send_message(f"✅ Zakupiono za {total} BC", ephemeral=True)
+        await interaction.response.send_message(f"✅ Zakupiono za {total} BC {COIN_EMOJI}", ephemeral=True)
 
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -369,7 +409,7 @@ class ShopView(View):
                                 discord.SelectOption(
                                     label=s['name'],
                                     value=s['id'],
-                                    description=f"{booster_price_coins(s['id'])} BC",
+                                    description=f"{booster_price_coins(s['id'])} BC {COIN_EMOJI}",
                                 )
                                 for s in sets_list[:25]
                             ]
@@ -552,7 +592,7 @@ class CollectionMainView(View):
                 name=f"💎 Najcenniejsza karta",
                 value=(
                     f"{card_name} | `{ptcgo_code}` | #{card_number} x{top5[0][2]}\n"
-                    f"**{usd_to_bc(top5[0][1])} BC**"
+                    f"**{usd_to_bc(top5[0][1])} BC {COIN_EMOJI}**"
                 ),
                 inline=False
             )
@@ -573,7 +613,7 @@ class CollectionMainView(View):
                         break
                 opis += (
                     f"{idx}. {card_name} | `{ptcgo_code}` | #{card_number} x{cnt} "
-                    f"— **{usd_to_bc(price)} BC**\n"
+                    f"— **{usd_to_bc(price)} BC {COIN_EMOJI}**\n"
                 )
             embed.add_field(name="Pozostałe z TOP 5:", value=opis, inline=False)
         hist = user.get("history", [])
@@ -592,7 +632,7 @@ class CollectionMainView(View):
         embed.add_field(
             name="Suma wartości kolekcji:",
             value=(
-                f"**{all_total_usd:.2f} USD** / **{all_total_bc} BC**\n"
+                f"**{all_total_usd:.2f} USD** / **{all_total_bc} BC {COIN_EMOJI}**\n"
                 f"Zmiana od ostatniej aktualizacji: {change}"
             ),
             inline=False
@@ -601,7 +641,7 @@ class CollectionMainView(View):
         if boost_count > 0:
             embed.add_field(name="Rare Boosty do użycia", value=f"{boost_count} szt.", inline=False)
         money = user.get("money", 0)
-        embed.add_field(name="💰 Saldo", value=f"{money} monet", inline=False)
+        embed.add_field(name="💰 Saldo", value=f"{money} BC {COIN_EMOJI}", inline=False)
         return embed
     
     class ViewCardsButton(Button):
@@ -764,7 +804,7 @@ async def build_set_embed(user, sets, set_id):
     if top5:
         lines = []
         for idx, (cid, name, price, url) in enumerate(top5):
-            lines.append(f"{idx+1}. {name} — {usd_to_bc(price)} BC")
+            lines.append(f"{idx+1}. {name} — {usd_to_bc(price)} BC {COIN_EMOJI}")
         embed.add_field(
             name="🔝 **TOP 5 najdroższych kart**",
             value="\n".join(lines),
@@ -817,7 +857,7 @@ class CardRevealView(View):
         if price:
             embed.add_field(
                 name="Wartość rynkowa",
-                value=f"{price:.2f} USD ({usd_to_bc(price)} BC)",
+                value=f"{price:.2f} USD ({usd_to_bc(price)} BC {COIN_EMOJI})",
                 inline=True
             )
         else:
@@ -903,7 +943,7 @@ class CardRevealView(View):
                                 f"{interaction.user.mention} trafił/a **{card['name']}**\n"
                                 f"`{card.get('set', {}).get('ptcgoCode', '-')}` | #{card.get('number', '-')}\n"
                                 f"Rzadkość: {card.get('rarity', 'Unknown')}\n"
-                                f"Wartość: **{price_bc} BC**"
+                                f"Wartość: **{price_bc} BC {COIN_EMOJI}**"
                             ),
                             color=discord.Color.gold()
                         )
@@ -923,7 +963,7 @@ class CardRevealView(View):
                         total_usd += price
                 total_bc = usd_to_bc(total_usd)
                 podsumowanie = (
-                    f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({total_bc} BC)"
+                    f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({total_bc} BC {COIN_EMOJI})"
                 )
                 class AfterBoosterView(View):
                     @discord.ui.button(label="Przejdź do kolekcji", style=discord.ButtonStyle.primary)
@@ -958,6 +998,8 @@ async def start_cmd(interaction: discord.Interaction):
         "boosters": [],
         "cards": [],
         "rare_boost": 0,
+        "double_daily_until": 0,
+        "streak_freeze": 0,
         "money": START_MONEY,
         "last_daily": 0,
         "daily_streak": 0,
@@ -966,7 +1008,7 @@ async def start_cmd(interaction: discord.Interaction):
     }
     save_users(users)
     await interaction.response.send_message(
-        f"✅ Utworzono konto! Otrzymujesz {START_MONEY} monet.", ephemeral=True
+        f"✅ Utworzono konto! Otrzymujesz {START_MONEY} BC {COIN_EMOJI}", ephemeral=True
     )
     try:
         await interaction.channel.send(
@@ -1056,7 +1098,9 @@ async def saldo(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     money = users[uid].get("money", 0)
-    await interaction.response.send_message(f"💰 Twoje saldo: {money} monet", ephemeral=True)
+    await interaction.response.send_message(
+        f"💰 Twoje saldo: {money} BC {COIN_EMOJI}", ephemeral=True
+    )
 
 # --- KOMENDA DAILY ---
 @client.tree.command(name="daily", description="Odbierz dzienną nagrodę monet")
@@ -1083,15 +1127,21 @@ async def daily(interaction: discord.Interaction):
     if now - last <= DAILY_COOLDOWN * 1.5 and last != 0:
         streak += 1
     else:
-        streak = 1
+        if last != 0 and users[uid].get("streak_freeze", 0) > 0:
+            users[uid]["streak_freeze"] -= 1
+        else:
+            streak = 1
     users[uid]["daily_streak"] = streak
     if streak >= 30 and "daily_30" not in users[uid].get("achievements", []):
         users[uid].setdefault("achievements", []).append("daily_30")
-    users[uid]["money"] = users[uid].get("money", 0) + DAILY_AMOUNT
+    amount = DAILY_AMOUNT
+    if users[uid].get("double_daily_until", 0) > now:
+        amount *= 2
+    users[uid]["money"] = users[uid].get("money", 0) + amount
     users[uid]["last_daily"] = now
     save_users(users)
     await interaction.response.send_message(
-        f"✅ Otrzymujesz {DAILY_AMOUNT} monet!", ephemeral=True
+        f"✅ Otrzymujesz {amount} BC {COIN_EMOJI}!", ephemeral=True
     )
 
 # --- KOMENDA KUP BOOSTER ---
@@ -1111,13 +1161,15 @@ async def kup_booster(interaction: discord.Interaction, kod: str):
         return
     price = booster_price_coins(target["id"])
     if users[uid].get("money", 0) < price:
-        await interaction.response.send_message("❌ Nie masz wystarczającej ilości monet.", ephemeral=True)
+        await interaction.response.send_message(
+            "❌ Nie masz wystarczającej liczby BC!", ephemeral=True
+        )
         return
     users[uid]["money"] -= price
     users[uid]["boosters"].append(target["id"])
     save_users(users)
     await interaction.response.send_message(
-        f"✅ Kupiono booster {target['name']}!", ephemeral=True
+        f"✅ Kupiono booster {target['name']} za {price} BC {COIN_EMOJI}", ephemeral=True
     )
 
 # --- KOMENDA SKLEP ---
@@ -1173,7 +1225,7 @@ async def ranking_cmd(interaction: discord.Interaction):
         if best and best.get("week") == week and best.get("year") == year:
             entries.append((uid, best.get("price", 0)))
     top3 = sorted(entries, key=lambda x: x[1], reverse=True)[:3]
-    lines = [f"{idx+1}. <@{uid}> - {usd_to_bc(price)} BC" for idx,(uid,price) in enumerate(top3)]
+    lines = [f"{idx+1}. <@{uid}> - {usd_to_bc(price)} BC {COIN_EMOJI}" for idx,(uid,price) in enumerate(top3)]
     if not lines:
         lines = ["Brak danych"]
     embed = discord.Embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
