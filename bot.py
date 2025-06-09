@@ -76,6 +76,8 @@ CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000
 
 # Grafika nagłówka sklepu
 SHOP_IMAGE_PATH = "graphic/shop.png"
+# Ikona waluty
+COIN_IMAGE_PATH = "graphic/coin.png"
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
@@ -162,10 +164,10 @@ def build_cart_embed(user_id, message):
     total = compute_cart_total(cart)
     embed = discord.Embed(title="Koszyk", description=message, color=EMBED_COLOR)
     embed.set_thumbnail(url="attachment://koszyk.png")
-    embed.add_field(name="Wartość koszyka", value=f"{total} monet", inline=False)
-    embed.add_field(name="Twoje saldo", value=f"{money} monet", inline=False)
+    embed.add_field(name="Wartość koszyka", value=f"{total} BC", inline=False)
+    embed.add_field(name="Twoje saldo", value=f"{money} BC", inline=False)
     if money < total:
-        embed.add_field(name="Brakuje środków", value="Nie masz wystarczającej liczby monet!", inline=False)
+        embed.add_field(name="Brakuje środków", value="Nie masz wystarczającej liczby BC!", inline=False)
     return embed
 
 def current_week_info():
@@ -197,39 +199,42 @@ def booster_image_url(set_id: str) -> str:
     """Return the URL of the booster pack image for a given set."""
     return f"https://images.pokemontcg.io/{set_id}/booster.png"
 
-def build_shop_embed(user_id, page: int = 0):
+def build_shop_embed(user_id):
     sets = get_all_sets()
     purchases = load_data()
     embed = discord.Embed(
         title="Sklep",
-        description="Użyj przycisków poniżej, aby dodać produkty do koszyka.",
+        description=(
+            "W sklepie znajdziesz boostery i itemy. "
+            "Użyj przycisków poniżej, aby dodać produkty do koszyka."
+        ),
         color=EMBED_COLOR,
     )
     embed.set_thumbnail(url="attachment://shop.png")
+    embed.set_author(name="BoguckiCoin (BC)", icon_url="attachment://coin.png")
 
-    start = page * 10
-    page_sets = sets[start:start + 10]
-    total_pages = max(1, (len(sets) + 9) // 10)
     if purchases:
         top = sorted(purchases.items(), key=lambda x: x[1], reverse=True)[:5]
+        best_id, best_count = top[0]
+        best_name = next((s['name'] for s in sets if s['id'] == best_id), best_id)
+        embed.set_image(url=booster_image_url(best_id))
+        embed.add_field(
+            name=f"1. {best_name}",
+            value=f"{best_count} sprzedanych",
+            inline=False,
+        )
         lines = []
-        for idx, (sid, cnt) in enumerate(top, start=1):
+        for idx, (sid, cnt) in enumerate(top[1:], start=2):
             name = next((s['name'] for s in sets if s['id'] == sid), sid)
-            text = f"{name} - {cnt} szt."
-            if idx == 1:
-                text = f"🏆 **{text}**"
-            lines.append(f"{idx}. {text}")
-        total_value = sum(booster_price_coins(sid) * qty for sid, qty in purchases.items())
-        embed.add_field(name="TOP 5 kupowanych", value="\n".join(lines), inline=False)
-        embed.add_field(name="Łączna wartość kart", value=f"{total_value} monet", inline=False)
-    boosters_desc = []
-    for s in page_sets:
-        price = booster_price_coins(s['id'])
-        boosters_desc.append(f"{s['name']} (`{s['ptcgoCode']}`) - {price} monet")
-
-    embed.add_field(name="Boostery", value="\n".join(boosters_desc) or "Brak", inline=False)
-    items_desc = [f"{info['name']} - {info['price']} monet" for info in ITEMS.values()]
-    embed.add_field(name="Itemy", value="\n".join(items_desc) or "Brak", inline=False)
+            lines.append(f"{idx}. {name} - {cnt} szt.")
+        if lines:
+            embed.add_field(
+                name="Pozostałe popularne",
+                value="\n".join(lines),
+                inline=False,
+            )
+    items_desc = [f"{info['name']} - {info['price']} BC" for info in ITEMS.values()]
+    embed.add_field(name="Dostępne itemy", value="\n".join(items_desc) or "Brak", inline=False)
     cart = carts.get(user_id)
     if cart and (cart.get("boosters") or cart.get("items")):
         lines = []
@@ -239,10 +244,8 @@ def build_shop_embed(user_id, page: int = 0):
         for iid, q in cart.get("items", {}).items():
             lines.append(f"{ITEMS[iid]['name']} x{q}")
         total = compute_cart_total(cart)
-        lines.append(f"**Razem: {total} monet**")
+        lines.append(f"**Razem: {total} BC**")
         embed.add_field(name="Koszyk", value="\n".join(lines), inline=False)
-
-    embed.set_footer(text=f"Strona {page + 1}/{total_pages}")
     return embed
 
 class QuantityModal(Modal):
@@ -281,13 +284,10 @@ class QuickBuyView(View):
         await btn.callback(interaction)
 
 class ShopView(View):
-    def __init__(self, user_id, page: int = 0):
+    def __init__(self, user_id):
         super().__init__(timeout=180)
         self.user_id = str(user_id)
-        self.page = page
         self.message = None
-        self.add_item(self.PrevPageButton(self))
-        self.add_item(self.NextPageButton(self))
         self.add_item(self.AddBoosterButton(self))
         self.add_item(self.AddItemButton(self))
         self.add_item(self.ClearButton(self))
@@ -305,7 +305,7 @@ class ShopView(View):
             return
         total = compute_cart_total(cart)
         if users[uid].get("money", 0) < total:
-            await interaction.response.send_message("❌ Za mało monet", ephemeral=True)
+            await interaction.response.send_message("❌ Za mało BC", ephemeral=True)
             return
         users[uid]["money"] -= total
         data = load_data()
@@ -319,40 +319,18 @@ class ShopView(View):
         save_users(users)
         carts.pop(uid, None)
         await self.update()
-        await interaction.response.send_message(f"✅ Zakupiono za {total} monet", ephemeral=True)
+        await interaction.response.send_message(f"✅ Zakupiono za {total} BC", ephemeral=True)
 
-    class PrevPageButton(Button):
-        def __init__(self, parent):
-            super().__init__(label="◀", style=discord.ButtonStyle.secondary)
-            self.parent = parent
-
-        async def callback(self, interaction: discord.Interaction):
-            if self.parent.page > 0:
-                self.parent.page -= 1
-            await self.parent.update()
-            await interaction.response.defer()
-
-    class NextPageButton(Button):
-        def __init__(self, parent):
-            super().__init__(label="▶", style=discord.ButtonStyle.secondary)
-            self.parent = parent
-
-        async def callback(self, interaction: discord.Interaction):
-            sets = get_all_sets()
-            max_page = max(0, (len(sets) - 1) // 10)
-            if self.parent.page < max_page:
-                self.parent.page += 1
-            await self.parent.update()
-            await interaction.response.defer()
 
     async def interaction_check(self, interaction: discord.Interaction):
         return str(interaction.user.id) == self.user_id
 
     async def update(self):
         if self.message:
-            embed = build_shop_embed(self.user_id, self.page)
-            file = discord.File(SHOP_IMAGE_PATH, filename="shop.png")
-            await self.message.edit(embed=embed, view=self, attachments=[file])
+            embed = build_shop_embed(self.user_id)
+            file1 = discord.File(SHOP_IMAGE_PATH, filename="shop.png")
+            file2 = discord.File(COIN_IMAGE_PATH, filename="coin.png")
+            await self.message.edit(embed=embed, view=self, attachments=[file1, file2])
 
     class AddBoosterButton(Button):
         def __init__(self, parent):
@@ -388,7 +366,7 @@ class ShopView(View):
                                 discord.SelectOption(
                                     label=s['name'],
                                     value=s['id'],
-                                    description=f"{booster_price_coins(s['id'])} monet",
+                                    description=f"{booster_price_coins(s['id'])} BC",
                                 )
                                 for s in sets_list[:25]
                             ]
@@ -1150,10 +1128,11 @@ async def sklep(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-    embed = build_shop_embed(uid, 0)
-    view = ShopView(uid, page=0)
-    file = discord.File(SHOP_IMAGE_PATH, filename="shop.png")
-    await interaction.response.send_message(embed=embed, view=view, file=file, ephemeral=True)
+    embed = build_shop_embed(uid)
+    view = ShopView(uid)
+    file1 = discord.File(SHOP_IMAGE_PATH, filename="shop.png")
+    file2 = discord.File(COIN_IMAGE_PATH, filename="coin.png")
+    await interaction.response.send_message(embed=embed, view=view, files=[file1, file2], ephemeral=True)
     view.message = await interaction.original_response()
 
 # --- KOMENDA OSIAGNIĘCIA ---
