@@ -117,10 +117,6 @@ async def fetch_and_save_sets():
                 print(f"✅ Dodano {len(new_sets)} nowych setów")
             return new_sets
           
-def booster_image_url(set_id: str) -> str:
-    """Return the URL of the booster pack image for a given set."""
-    return f"https://images.pokemontcg.io/{set_id}/booster.png"
-
 def group_sets_by_language_and_series():
     sets = get_all_sets()
     result = {}
@@ -494,15 +490,13 @@ class CollectionMainView(View):
         boosters_counter = self.boosters_counter
         all_sets = self.all_sets
 
-        total_cards = sum(c["count"] if isinstance(c, dict) and "count" in c else 1 for c in user["cards"])
-        unique_cards = len(set(c["id"] if isinstance(c, dict) else c for c in user["cards"]))
-        total_boosters = sum(boosters_counter.values())
-        user = self.user
-        boosters_counter = self.boosters_counter
-        all_sets = self.all_sets
-
-        total_cards = sum(c["count"] if isinstance(c, dict) and "count" in c else 1 for c in user["cards"])
-        unique_cards = len(set(c["id"] if isinstance(c, dict) else c for c in user["cards"]))
+        total_cards = sum(
+            c["count"] if isinstance(c, dict) and "count" in c else 1
+            for c in user["cards"]
+        )
+        unique_cards = len(
+            set(c["id"] if isinstance(c, dict) else c for c in user["cards"])
+        )
         total_boosters = sum(boosters_counter.values())
 
         id_to_card = {}

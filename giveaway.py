@@ -43,17 +43,7 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
             await interaction.response.send_message("❌ Nieprawidłowe dane wejściowe.", ephemeral=True)
             return
 
-        ptcgo_input = self.booster_id.value.upper()
-        sets = get_all_sets()
-        matched_set = next((s for s in sets if s.get("ptcgoCode", "").upper() == ptcgo_input), None)
-
-        if not matched_set:
-            await interaction.response.send_message("❌ Nie znaleziono zestawu o podanym kodzie PTCGO.", ephemeral=True)
-            return
-
-        booster_id = matched_set["id"]
-        set_name = matched_set["name"]
-        logo_url = matched_set.get("images", {}).get("logo", None)
+        logo_url = matched_set.get("images", {}).get("logo") if matched_set else None
 
         file = discord.File(GRAPHIC_DIR / "giveawey.png", filename="giveawey.png")
 
@@ -66,6 +56,8 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
             color=EMBED_COLOR,
             timestamp=datetime.now(timezone.utc) + timedelta(seconds=czas_s)
         )
+        if logo_url:
+            embed.set_thumbnail(url=logo_url)
         embed.set_image(url="attachment://giveawey.png")
         embed.set_footer(text="Kliknij przycisk poniżej, aby wziąć udział!")
 
