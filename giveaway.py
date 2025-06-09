@@ -4,7 +4,10 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 from discord.ui import Modal, View, TextInput, Button
 from poke_utils import load_users, save_users, get_all_sets
+from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+GRAPHIC_DIR = BASE_DIR / "graphic"
 EMBED_COLOR = discord.Color.dark_teal()
 
 def parse_time_string(s: str) -> int:
@@ -52,7 +55,7 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
         set_name = matched_set["name"]
         logo_url = matched_set.get("images", {}).get("logo", None)
 
-        file = discord.File("graphic/giveawey.png", filename="giveawey.png")
+        file = discord.File(GRAPHIC_DIR / "giveawey.png", filename="giveawey.png")
 
         embed = discord.Embed(
             description=(
