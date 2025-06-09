@@ -2,6 +2,8 @@ import json
 
 USERS_FILE = "users.json"
 SETS_FILE = "sets.json"
+PRICE_FILE = "price.json"
+DATA_FILE = "data.json"
 
 def load_users():
     try:
@@ -33,3 +35,42 @@ def ensure_user_fields(user):
     user.setdefault("weekly_best", {"week": 0, "year": 0, "price": 0})
     user.setdefault("achievements", [])
     return user
+
+
+def load_prices():
+    try:
+        with open(PRICE_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        sets = get_all_sets()
+        prices = {}
+        for s in sets:
+            try:
+                year = int(s.get("releaseDate", "2000/01/01").split("-")[0])
+            except Exception:
+                year = 2000
+            age = max(0, 2025 - year)
+            usd = round(4.0 + age * 0.1, 2)
+            price = int(usd * 25)
+            prices[s["id"]] = price
+        with open(PRICE_FILE, "w") as f:
+            json.dump(prices, f, indent=4)
+        return prices
+
+
+def save_prices(data):
+    with open(PRICE_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+def load_data():
+    try:
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)

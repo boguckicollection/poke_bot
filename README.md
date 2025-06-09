@@ -1,9 +1,10 @@
 # Poké Booster Bot
 
-Poké Booster Bot to polskojęzyczny bot Discord umożliwiający otwieranie boosterów
-kart Pokémon w wirtualnej kolekcji. Bot korzysta z [Pokemon TCG API](https://pokemontcg.io/) i umożliwia
-zbieranie kart, wykonywanie codziennych zadań oraz handel przedmiotami w
-wbudowanym sklepie.
+![Logo](graphic/logo.png)
+
+Polski bot Discord do kolekcjonowania kart Pokémon i otwierania wirtualnych boosterów.
+Korzysta z [Pokemon TCG API](https://pokemontcg.io/) i pozwala zbierać karty,
+wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 
 ![Card back](https://images.pokemontcg.io/other/official-backs/2021.jpg)
 

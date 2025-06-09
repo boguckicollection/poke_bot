@@ -2,7 +2,15 @@ import discord
 from discord import app_commands
 from discord.ui import View, Button, Modal, TextInput, select, Select
 from giveaway import GiveawayModal, GiveawayView, parse_time_string
-from utils import load_users, save_users, get_all_sets, ensure_user_fields
+from utils import (
+    load_users,
+    save_users,
+    get_all_sets,
+    ensure_user_fields,
+    load_prices,
+    load_data,
+    save_data,
+)
 import os
 import json
 import aiohttp
@@ -114,6 +122,9 @@ def booster_price_usd_for_set(set_obj):
 
 
 def booster_price_coins(set_id):
+    prices = load_prices()
+    if set_id in prices:
+        return prices[set_id]
     sets = get_all_sets()
     set_obj = next((s for s in sets if s["id"] == set_id), None)
     if not set_obj:
@@ -174,6 +185,7 @@ def booster_image_url(set_id: str) -> str:
 
 def build_shop_embed(user_id, page: int = 0):
     sets = get_all_sets()
+    purchases = load_data()
     embed = discord.Embed(
         title="Sklep",
         description="Użyj przycisków poniżej, aby dodać produkty do koszyka.",
@@ -184,6 +196,18 @@ def build_shop_embed(user_id, page: int = 0):
     start = page * 10
     page_sets = sets[start:start + 10]
     total_pages = max(1, (len(sets) + 9) // 10)
+    if purchases:
+        top = sorted(purchases.items(), key=lambda x: x[1], reverse=True)[:5]
+        lines = []
+        for idx, (sid, cnt) in enumerate(top, start=1):
+            name = next((s['name'] for s in sets if s['id'] == sid), sid)
+            text = f"{name} - {cnt} szt."
+            if idx == 1:
+                text = f"🏆 **{text}**"
+            lines.append(f"{idx}. {text}")
+        total_value = sum(booster_price_coins(sid) * qty for sid, qty in purchases.items())
+        embed.add_field(name="TOP 5 kupowanych", value="\n".join(lines), inline=False)
+        embed.add_field(name="Łączna wartość kart", value=f"{total_value} monet", inline=False)
     boosters_desc = []
     for s in page_sets:
         price = booster_price_coins(s['id'])
@@ -270,8 +294,11 @@ class ShopView(View):
             await interaction.response.send_message("❌ Za mało monet", ephemeral=True)
             return
         users[uid]["money"] -= total
+        data = load_data()
         for sid, q in cart.get("boosters", {}).items():
             users[uid]["boosters"].extend([sid] * q)
+            data[sid] = data.get(sid, 0) + q
+        save_data(data)
         for iid, q in cart.get("items", {}).items():
             if iid == "rare_boost":
                 users[uid]["rare_boost"] = users[uid].get("rare_boost", 0) + q
@@ -343,7 +370,14 @@ class ShopView(View):
                         async def select_era(self, i3: discord.Interaction, menu_era: discord.ui.Select):
                             era = menu_era.values[0]
                             sets_list = eras.get(era, [])
-                            set_opts = [discord.SelectOption(label=s['name'], value=s['id']) for s in sets_list[:25]]
+                            set_opts = [
+                                discord.SelectOption(
+                                    label=s['name'],
+                                    value=s['id'],
+                                    description=f"{booster_price_coins(s['id'])} monet",
+                                )
+                                for s in sets_list[:25]
+                            ]
 
                             class SetView(View):
                                 def __init__(self, shop_view):
@@ -939,6 +973,12 @@ async def start_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(
         f"✅ Utworzono konto! Otrzymujesz {START_MONEY} monet.", ephemeral=True
     )
+    try:
+        await interaction.channel.send(
+            f"🎉 {interaction.user.mention} dołączył do gry! Witamy!"
+        )
+    except Exception:
+        pass
 
 # --- KOMENDA Otwórz ---
 @client.tree.command(name="otworz", description="Otwórz booster i zobacz karty jedna po drugiej!")
