@@ -44,6 +44,9 @@ CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000
 # lub jeśli chcesz użyć oficjalnego:
 # CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
 
+# Grafika nagłówka sklepu
+SHOP_IMAGE_PATH = "graphic/shop.png"
+
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
 
@@ -117,13 +120,17 @@ def booster_image_url(set_id: str) -> str:
     """Return the URL of the booster pack image for a given set."""
     return f"https://images.pokemontcg.io/{set_id}/booster.png"
 
-def build_shop_embed(user_id):
+def build_shop_embed(user_id, page: int = 0):
     sets = get_all_sets()
     embed = discord.Embed(title="Sklep", color=discord.Color.gold())
+    embed.set_image(url="attachment://shop.png")
+
+    start = page * 10
+    page_sets = sets[start:start + 10]
+    total_pages = max(1, (len(sets) + 9) // 10)
     boosters_desc = []
-    for s in sets[:10]:
-        img = booster_image_url(s['id'])
-        boosters_desc.append(f"[`{s['ptcgoCode']}` {s['name']} - {BOOSTER_PRICE} monet]({img})")
+    for s in page_sets:
+        boosters_desc.append(f"{s['name']} (`{s['ptcgoCode']}`) - {BOOSTER_PRICE} monet")
 
     embed.add_field(name="Boostery", value="\n".join(boosters_desc) or "Brak", inline=False)
     items_desc = [f"{info['name']} - {info['price']} monet" for info in ITEMS.values()]
@@ -139,6 +146,8 @@ def build_shop_embed(user_id):
         total = compute_cart_total(cart)
         lines.append(f"**Razem: {total} monet**")
         embed.add_field(name="Koszyk", value="\n".join(lines), inline=False)
+
+    embed.set_footer(text=f"Strona {page + 1}/{total_pages}")
     return embed
 
 class QuantityModal(Modal):
@@ -156,22 +165,50 @@ class QuantityModal(Modal):
         await self.callback_fn(interaction, qty)
 
 class ShopView(View):
-    def __init__(self, user_id):
+    def __init__(self, user_id, page: int = 0):
         super().__init__(timeout=180)
         self.user_id = str(user_id)
+        self.page = page
         self.message = None
+        self.add_item(self.PrevPageButton(self))
+        self.add_item(self.NextPageButton(self))
         self.add_item(self.AddBoosterButton(self))
         self.add_item(self.AddItemButton(self))
         self.add_item(self.FinalizeButton(self))
         self.add_item(self.ClearButton(self))
+
+    class PrevPageButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="◀", style=discord.ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            if self.parent.page > 0:
+                self.parent.page -= 1
+            await self.parent.update()
+            await interaction.response.defer()
+
+    class NextPageButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="▶", style=discord.ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            sets = get_all_sets()
+            max_page = max(0, (len(sets) - 1) // 10)
+            if self.parent.page < max_page:
+                self.parent.page += 1
+            await self.parent.update()
+            await interaction.response.defer()
 
     async def interaction_check(self, interaction: discord.Interaction):
         return str(interaction.user.id) == self.user_id
 
     async def update(self):
         if self.message:
-            embed = build_shop_embed(self.user_id)
-            await self.message.edit(embed=embed, view=self)
+            embed = build_shop_embed(self.user_id, self.page)
+            file = discord.File(SHOP_IMAGE_PATH, filename="shop.png")
+            await self.message.edit(embed=embed, view=self, attachments=[file])
 
     class AddBoosterButton(Button):
         def __init__(self, parent):
@@ -490,16 +527,18 @@ class CollectionMainView(View):
 
                 async def callback(self, interaction: discord.Interaction):
                     set_id = self.values[0]
-                    embed = await build_set_embed(self.parent_view.user, self.parent_view.sets, set_id)
-                    file = discord.File("sety.png", filename="sety.png")
+                    embed = await build_set_embed(
+                        self.parent_view.user,
+                        self.parent_view.sets,
+                        set_id,
+                    )
                     view = SetDropdownView(
                         user=self.parent_view.user,
                         sets=self.parent_view.sets,
                         options=self.parent_view.options,
-                        selected_set_id=set_id
+                        selected_set_id=set_id,
                     )
-                    view = SetDropdownView(self.user, sets, options)
-                    await interaction.response.send_message(embed=embed, view=SetDropdownView(self.user, sets, options, selected_set_id=set_id), ephemeral=True)
+                    await interaction.response.edit_message(embed=embed, view=view)
 
 
 
@@ -512,9 +551,41 @@ class CollectionMainView(View):
             self.all_sets = all_sets
 
         async def callback(self, interaction: discord.Interaction):
+            if not self.user["boosters"]:
+                await interaction.response.send_message(
+                    "❌ Nie masz boosterów do otwarcia!",
+                    ephemeral=True,
+                )
+                return
+
+            id_to_name = {s["id"]: s["name"] for s in self.all_sets}
+            counts = Counter(self.user["boosters"])
+            options = [
+                discord.SelectOption(
+                    label=f"{id_to_name.get(bid, bid)} x{cnt}", value=bid
+                )
+                for bid, cnt in counts.items()
+            ]
+
+            class BoosterSelectView(View):
+                @select(placeholder="Wybierz booster do otwarcia", options=options)
+                async def select_cb(self, i2: discord.Interaction, select: discord.ui.Select):
+                    chosen = select.values[0]
+                    users = load_users()
+                    uid = str(i2.user.id)
+                    ensure_user_fields(users[uid])
+                    if chosen in users[uid]["boosters"]:
+                        users[uid]["boosters"].remove(chosen)
+                        save_users(users)
+                        await i2.response.defer()
+                        await open_booster(i2, chosen)
+                    else:
+                        await i2.response.send_message("Nie znaleziono boostera.", ephemeral=True)
+
             await interaction.response.send_message(
-                "Użyj komendy `/otworz`, aby otworzyć booster.",
-                ephemeral=True
+                "🃏 Wybierz booster do otwarcia:",
+                view=BoosterSelectView(),
+                ephemeral=True,
             )
 
 async def build_set_embed(user, sets, set_id):
@@ -901,9 +972,10 @@ async def sklep(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-    embed = build_shop_embed(uid)
-    view = ShopView(uid)
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    embed = build_shop_embed(uid, 0)
+    view = ShopView(uid, page=0)
+    file = discord.File(SHOP_IMAGE_PATH, filename="shop.png")
+    await interaction.response.send_message(embed=embed, view=view, file=file, ephemeral=True)
     view.message = await interaction.original_response()
 
 # --- KOMENDA OSIAGNIĘCIA ---
