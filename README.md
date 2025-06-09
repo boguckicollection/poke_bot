@@ -30,7 +30,7 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
    BOT_TOKEN=twoj_token_bota
    POKETCG_API_KEY=twoj_klucz_api
    # Opcjonalnie ID emoji bc_coin na Twoim serwerze
-   BC_COIN_ID=123456789012345678
+   BC_COIN_ID=1381617796282319010
    ```
 3. Uruchom bota:
    ```bash
@@ -41,7 +41,7 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 
 - `/start` – załóż konto i odbierz startową pulę monet.
 - `/saldo` – sprawdź aktualną ilość posiadanych monet.
-- `/daily` – codzienna nagroda pieniędzy (24 h cooldown). Co 7 dni serii otrzymasz bonus monet.
+- `/daily` – codzienna nagroda pieniędzy (24 h cooldown). Co 7 dni serii otrzymasz bonus 200 BC.
 - `/sklep` – otwiera widok sklepu z boosterami i przedmiotami.
 - `/kup_booster <kod>` – szybki zakup jednego boostera podając kod zestawu.
 - `/kolekcja` – wyświetla Twoją kolekcję kart i boosterów.

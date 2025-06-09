@@ -104,9 +104,9 @@ SHOP_IMAGE_PATH = GRAPHIC_DIR / "shop.png"
 # Ikona waluty
 COIN_IMAGE_PATH = GRAPHIC_DIR / "coin.png"
 # Emoji waluty używane w komunikatach
-BC_COIN_ID = os.environ.get("BC_COIN_ID")
-COIN_EMOJI = f"<:bc_coin:{BC_COIN_ID}>" if BC_COIN_ID else ":bc_coin:"
-FUN_EMOJIS = ["✨", "🎉", "🎲", "🔥"]
+BC_COIN_ID = os.environ.get("BC_COIN_ID", "1381617796282319010")
+COIN_EMOJI = f"<:bc_coin:{BC_COIN_ID}>"
+FUN_EMOJIS = ["✨", "🎉", "🎲", "🔥", "💎", "🎁", "🌟", "🚀", "🃏"]
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
