@@ -5,6 +5,8 @@ from datetime import datetime, timezone, timedelta
 from discord.ui import Modal, View, TextInput, Button
 from utils import load_users, save_users, get_all_sets
 
+EMBED_COLOR = discord.Color.dark_teal()
+
 def parse_time_string(s: str) -> int:
     units = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
     return int(s[:-1]) * units[s[-1].lower()]
@@ -58,9 +60,10 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
                 f"👑 Zwycięzcy: {zwyciezcy}\n"
                 f"⏳ Zakończenie za: {self.czas.value}"
             ),
-            color=discord.Color.gold(),
+            color=EMBED_COLOR,
             timestamp=datetime.now(timezone.utc) + timedelta(seconds=czas_s)
         )
+        embed.set_thumbnail(url="attachment://giveawey.png")
         embed.set_footer(text="Kliknij przycisk poniżej, aby wziąć udział!")
 
         view = GiveawayView(booster_id, liczba, zwyciezcy, czas_s)
