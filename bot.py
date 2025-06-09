@@ -297,8 +297,8 @@ class ShopView(View):
                     self.parent = parent
 
                 @select(placeholder="Wybierz język", options=lang_options)
-                async def select_lang(self, i2: discord.Interaction, select: discord.ui.Select):
-                    lang = select.values[0]
+                async def select_lang(self, i2: discord.Interaction, menu_lang: discord.ui.Select):
+                    lang = menu_lang.values[0]
                     eras = groups.get(lang, {})
                     era_opts = [discord.SelectOption(label=e, value=e) for e in eras]
 
@@ -307,8 +307,8 @@ class ShopView(View):
                             super().__init__(timeout=60)
 
                         @select(placeholder="Wybierz erę", options=era_opts)
-                        async def select_era(self, i3: discord.Interaction, select2: discord.ui.Select):
-                            era = select2.values[0]
+                        async def select_era(self, i3: discord.Interaction, menu_era: discord.ui.Select):
+                            era = menu_era.values[0]
                             sets_list = eras.get(era, [])
                             set_opts = [discord.SelectOption(label=s['name'], value=s['id']) for s in sets_list[:25]]
 
@@ -317,8 +317,8 @@ class ShopView(View):
                                     super().__init__(timeout=60)
 
                                 @select(placeholder="Wybierz set", options=set_opts)
-                                async def select_set(self, i4: discord.Interaction, select3: discord.ui.Select):
-                                    set_id = select3.values[0]
+                                async def select_set(self, i4: discord.Interaction, menu_set: discord.ui.Select):
+                                    set_id = menu_set.values[0]
                                     set_name = next((s['name'] for s in sets_list if s['id']==set_id), set_id)
 
                                     async def after_qty(i5, qty):
@@ -361,8 +361,8 @@ class ShopView(View):
                     self.parent = parent
 
                 @select(placeholder="Wybierz item", options=options)
-                async def select_cb(self, i2: discord.Interaction, select: discord.ui.Select):
-                    item_id = select.values[0]
+                async def select_cb(self, i2: discord.Interaction, menu_item: discord.ui.Select):
+                    item_id = menu_item.values[0]
                     item_name = ITEMS[item_id]['name']
 
                     async def after_qty(i3, qty):
@@ -659,8 +659,8 @@ class CollectionMainView(View):
 
             class BoosterSelectView(View):
                 @select(placeholder="Wybierz booster do otwarcia", options=options)
-                async def select_cb(self, i2: discord.Interaction, select: discord.ui.Select):
-                    chosen = select.values[0]
+                async def select_cb(self, i2: discord.Interaction, menu: discord.ui.Select):
+                    chosen = menu.values[0]
                     users = load_users()
                     uid = str(i2.user.id)
                     ensure_user_fields(users[uid])
@@ -928,8 +928,8 @@ async def otworz(interaction: discord.Interaction):
         ]
         class BoosterSelectView(View):
             @select(placeholder="Wybierz booster do otwarcia", options=options)
-            async def select_callback(self, i2: discord.Interaction, select: discord.ui.Select):
-                chosen = select.values[0]
+            async def select_callback(self, i2: discord.Interaction, menu_booster: discord.ui.Select):
+                chosen = menu_booster.values[0]
                 users[user_id]["boosters"].remove(chosen)
                 save_users(users)
                 await i2.response.defer()
