@@ -84,7 +84,7 @@ ITEMS = {
     },
     "mystery_booster": {
         "name": "Mystery Booster",
-        "price": 120,
+        "price": 500,
         "desc": "Natychmiast daje losowy booster",
     },
     "streak_freeze": {
@@ -350,6 +350,7 @@ class ShopView(View):
             return
         users[uid]["money"] -= total
         data = load_data()
+        mystery_results = []
         for sid, q in cart.get("boosters", {}).items():
             users[uid]["boosters"].extend([sid] * q)
             data[sid] = data.get(sid, 0) + q
@@ -369,6 +370,7 @@ class ShopView(View):
                     sid = chosen["id"]
                     users[uid]["boosters"].append(sid)
                     data[sid] = data.get(sid, 0) + 1
+                    mystery_results.append(chosen.get("name", sid))
             elif iid == "streak_freeze":
                 users[uid]["streak_freeze"] = users[uid].get("streak_freeze", 0) + q
             else:
@@ -377,9 +379,11 @@ class ShopView(View):
         carts.pop(uid, None)
         await self.update()
         emj = random.choice(FUN_EMOJIS)
-        await interaction.response.send_message(
-            f"{emj} Zakupiono za {total} BC {COIN_EMOJI}", ephemeral=True
-        )
+        msg = f"{emj} Zakupiono za {total} BC {COIN_EMOJI}"
+        if mystery_results:
+            boosters = ", ".join(mystery_results)
+            msg += f"\nWylosowano: {boosters}"
+        await interaction.response.send_message(msg, ephemeral=True)
 
 
     async def interaction_check(self, interaction: discord.Interaction):
