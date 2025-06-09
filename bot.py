@@ -56,6 +56,7 @@ START_MONEY = 100
 BOOSTER_PRICE = 100
 DAILY_AMOUNT = 50
 DAILY_COOLDOWN = 24 * 3600
+STREAK_BONUS = 200
 
 load_dotenv()
 load_card_cache()
@@ -103,7 +104,9 @@ SHOP_IMAGE_PATH = GRAPHIC_DIR / "shop.png"
 # Ikona waluty
 COIN_IMAGE_PATH = GRAPHIC_DIR / "coin.png"
 # Emoji waluty używane w komunikatach
-COIN_EMOJI = ":bc_coin:"
+BC_COIN_ID = os.environ.get("BC_COIN_ID")
+COIN_EMOJI = f"<:bc_coin:{BC_COIN_ID}>" if BC_COIN_ID else ":bc_coin:"
+FUN_EMOJIS = ["✨", "🎉", "🎲", "🔥"]
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
@@ -169,6 +172,15 @@ def booster_price_coins(set_id):
         return BOOSTER_PRICE
     usd = booster_price_usd_for_set(set_obj)
     return int(usd * COINS_PER_USD)
+
+
+def weighted_random_set(sets):
+    """Choose a random set weighted by inverse price."""
+    if not sets:
+        return None
+    prices = [booster_price_coins(s["id"]) for s in sets]
+    weights = [1 / p if p else 1 for p in prices]
+    return random.choices(sets, weights=weights, k=1)[0]
 
 
 def compute_cart_total(cart):
@@ -245,7 +257,7 @@ def build_shop_embed(user_id):
             embed.set_thumbnail(url=best_set['images']['logo'])
         embed.add_field(name="🏅 Najpopularniejszy booster", value="\u200b", inline=False)
         embed.add_field(
-            name=f"1. {best_name}",
+            name=f"__**1. {best_name}**__",
             value=f"{best_count} sprzedanych",
             inline=False,
         )
@@ -260,7 +272,7 @@ def build_shop_embed(user_id):
                 inline=False,
             )
     items_desc = [
-        f"{info['name']} - {info['price']} BC {COIN_EMOJI} \u2014 {info['desc']}"
+        f"**{info['name']}** - {info['price']} BC {COIN_EMOJI} \u2014 {info['desc']}"
         for info in ITEMS.values()
     ]
     embed.add_field(name="Dostępne itemy", value="\n".join(items_desc) or "Brak", inline=False)
@@ -351,7 +363,9 @@ class ShopView(View):
             elif iid == "mystery_booster":
                 sets = get_all_sets()
                 for _ in range(q):
-                    chosen = random.choice(sets)
+                    chosen = weighted_random_set(sets)
+                    if not chosen:
+                        continue
                     sid = chosen["id"]
                     users[uid]["boosters"].append(sid)
                     data[sid] = data.get(sid, 0) + 1
@@ -362,7 +376,10 @@ class ShopView(View):
         save_users(users)
         carts.pop(uid, None)
         await self.update()
-        await interaction.response.send_message(f"✅ Zakupiono za {total} BC {COIN_EMOJI}", ephemeral=True)
+        emj = random.choice(FUN_EMOJIS)
+        await interaction.response.send_message(
+            f"{emj} Zakupiono za {total} BC {COIN_EMOJI}", ephemeral=True
+        )
 
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -978,7 +995,7 @@ class CardRevealView(View):
                         await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
                 await interaction.response.edit_message(
                     content=(
-                        f"✅ Koniec boostera! Oto Twoje karty:\n"
+                        f"{random.choice(FUN_EMOJIS)} Koniec boostera! Oto Twoje karty:\n"
                         f"```{summary}```\n"
                         f"{podsumowanie}"
                     ),
@@ -1129,6 +1146,7 @@ async def daily(interaction: discord.Interaction):
     else:
         if last != 0 and users[uid].get("streak_freeze", 0) > 0:
             users[uid]["streak_freeze"] -= 1
+            streak += 1
         else:
             streak = 1
     users[uid]["daily_streak"] = streak
@@ -1137,11 +1155,17 @@ async def daily(interaction: discord.Interaction):
     amount = DAILY_AMOUNT
     if users[uid].get("double_daily_until", 0) > now:
         amount *= 2
-    users[uid]["money"] = users[uid].get("money", 0) + amount
+    bonus = 0
+    if streak % 7 == 0:
+        bonus = STREAK_BONUS * (streak // 7)
+    total_gain = amount + bonus
+    users[uid]["money"] = users[uid].get("money", 0) + total_gain
     users[uid]["last_daily"] = now
     save_users(users)
+    emj = random.choice(FUN_EMOJIS)
     await interaction.response.send_message(
-        f"✅ Otrzymujesz {amount} BC {COIN_EMOJI}!", ephemeral=True
+        f"{emj} Otrzymujesz {amount} BC {COIN_EMOJI}!" + (f" 🎊 Premia {bonus} BC" if bonus else ""),
+        ephemeral=True,
     )
 
 # --- KOMENDA KUP BOOSTER ---
