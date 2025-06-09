@@ -25,8 +25,21 @@ USD_PLN = 4.00
 # Ile monet odpowiada jednemu dolarowi
 COINS_PER_USD = 25
 
-# Prosty cache kart pobranych z API { (set_id, rarity): [cards] }
+# Prosty cache kart pobranych z API {set_id: {rarity: [cards]}}
 CARD_CACHE = {}
+CARD_CACHE_FILE = "card_cache.json"
+
+def load_card_cache():
+    global CARD_CACHE
+    try:
+        with open(CARD_CACHE_FILE, "r") as f:
+            CARD_CACHE = json.load(f)
+    except FileNotFoundError:
+        CARD_CACHE = {}
+
+def save_card_cache():
+    with open(CARD_CACHE_FILE, "w") as f:
+        json.dump(CARD_CACHE, f)
 
 EMBED_COLOR = discord.Color.dark_teal()
 
@@ -40,6 +53,7 @@ DAILY_AMOUNT = 50
 DAILY_COOLDOWN = 24 * 3600
 
 load_dotenv()
+load_card_cache()
 
 USERS_FILE = "users.json"
 SETS_FILE = "sets.json"
@@ -632,7 +646,8 @@ class CollectionMainView(View):
                 color=EMBED_COLOR
             )
             embed.set_thumbnail(url="attachment://sety.png")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            file = discord.File("graphic/sety.png", filename="sety.png")
+            await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
 
     class SetViewButton(Button):
         def __init__(self, user, all_sets):
@@ -940,7 +955,8 @@ class CardRevealView(View):
                         boosters_counter = Counter(user["boosters"])
                         view = CollectionMainView(user, boosters_counter, all_sets)
                         embed = await view.build_summary_embed()
-                        await i.response.send_message(embed=embed, view=view, ephemeral=True)
+                        file = discord.File("graphic/kolekcja.png", filename="kolekcja.png")
+                        await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
                 await interaction.response.edit_message(
                     content=(
                         f"✅ Koniec boostera! Oto Twoje karty:\n"
@@ -1249,7 +1265,8 @@ async def on_message(message):
                     boosters_counter = Counter(user["boosters"])
                     view = CollectionMainView(user, boosters_counter, all_sets)
                     embed = await view.build_summary_embed()
-                    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+                    file = discord.File("graphic/kolekcja.png", filename="kolekcja.png")
+                    await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
             await message.channel.send(
                 f"✅ Booster `{set_name}` został przydzielony do kolekcji użytkownika **{username}**!",
                 view=BoosterButtonsView()
@@ -1309,13 +1326,16 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
     result = []
     async with aiohttp.ClientSession(headers=headers) as session:
         async def get_cards_by_rarity(rarity, count):
-            key = (set_id, rarity)
-            if key not in CARD_CACHE:
-                url = f"https://api.pokemontcg.io/v2/cards?q=set.id:{set_id} AND rarity:\"{rarity}\""
+            set_cache = CARD_CACHE.setdefault(set_id, {})
+            if rarity not in set_cache:
+                url = (
+                    f"https://api.pokemontcg.io/v2/cards?q=set.id:{set_id} AND rarity:\"{rarity}\""
+                )
                 async with session.get(url) as resp:
                     data = await resp.json()
-                    CARD_CACHE[key] = data.get("data", [])
-            found = CARD_CACHE.get(key, [])
+                    set_cache[rarity] = data.get("data", [])
+                    save_card_cache()
+            found = set_cache.get(rarity, [])
             return random.sample(found, min(count, len(found)))
 
         result += await get_cards_by_rarity("Common", 4)
@@ -1361,6 +1381,13 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
     rares = [c for c in result if c.get("rarity") not in ["Common", "Uncommon"]]
     random.shuffle(commons)
     cards_result = commons + rares
-    return cards_result[:10]
+    unique = []
+    seen = set()
+    for card in cards_result:
+        cid = card.get("id")
+        if cid not in seen:
+            unique.append(card)
+            seen.add(cid)
+    return unique[:10]
 
 client.run(os.environ["BOT_TOKEN"])
