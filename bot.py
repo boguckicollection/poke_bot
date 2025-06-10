@@ -10,6 +10,9 @@ from poke_utils import (
     load_prices,
     load_data,
     save_data,
+    load_events,
+    save_events,
+    active_event_types,
 )
 import os
 import json
@@ -351,6 +354,15 @@ def build_achievement_pages(user, all_sets):
             info = BADGE_INFO.get(code)
             name = f"{info['emoji']} {info['name']}" if info else ACHIEVEMENTS_INFO.get(code, code)
             embed.add_field(name=name, value=f"{bar} {value}/{tgt} {status}", inline=False)
+        rewards = []
+        for code, _ in entries:
+            reward = ACHIEVEMENT_REWARDS.get(code)
+            if reward:
+                info = BADGE_INFO.get(code)
+                name = f"{info['emoji']} {info['name']}" if info else ACHIEVEMENTS_INFO.get(code, code)
+                rewards.append(f"{name}: {reward} BC {COIN_EMOJI}")
+        if rewards:
+            embed.add_field(name="Nagrody", value="\n".join(rewards), inline=False)
         pages.append(embed)
     return pages
 
@@ -413,6 +425,7 @@ FUN_EMOJIS = ["✨", "🎉", "🎲", "🔥", "💎", "🎁", "🌟", "🚀", "�
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
+random_event_active = False
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -500,7 +513,7 @@ def build_cart_embed(user_id, message):
     cart = carts.get(user_id, {"boosters": {}, "items": {}})
     total = compute_cart_total(cart)
     embed = discord.Embed(title="Koszyk", description=message, color=EMBED_COLOR)
-    embed.set_image(url="attachment://koszyk.png")
+    embed.set_thumbnail(url="attachment://koszyk.png")
     embed.add_field(name="Wartość koszyka", value=f"{total} BC {COIN_EMOJI}", inline=False)
     embed.add_field(name="Twoje saldo", value=f"{money} BC {COIN_EMOJI}", inline=False)
     if money < total:
@@ -512,6 +525,11 @@ def current_week_info():
     week = now.isocalendar()[1]
     year = now.isocalendar()[0]
     return week, year
+
+def is_weekend(dt=None):
+    if dt is None:
+        dt = datetime.datetime.now(datetime.UTC)
+    return dt.weekday() >= 5
 
 def update_weekly_best(user, price, name):
     week, year = current_week_info()
@@ -628,6 +646,37 @@ class QuickBuyView(View):
     async def add_more(self, interaction: discord.Interaction, button: Button):
         btn = ShopView.AddBoosterButton(self.shop_view)
         await btn.callback(interaction)
+
+
+class QuickBonusView(View):
+    def __init__(self, amount=50):
+        super().__init__(timeout=30)
+        self.claimed = False
+        self.amount = amount
+
+    @discord.ui.button(label="Zgarnij bonus", style=discord.ButtonStyle.success)
+    async def claim(self, interaction: discord.Interaction, button: Button):
+        if self.claimed:
+            await interaction.response.send_message("Ktoś był szybszy!", ephemeral=True)
+            return
+        users = load_users()
+        uid = str(interaction.user.id)
+        if uid not in users:
+            await interaction.response.send_message("📭 Nie masz konta.", ephemeral=True)
+            return
+        ensure_user_fields(users[uid])
+        users[uid]["money"] = users[uid].get("money", 0) + self.amount
+        users[uid]["money_events"] = users[uid].get("money_events", 0) + self.amount
+        save_users(users)
+        self.claimed = True
+        await interaction.response.send_message(f"🎉 Otrzymujesz {self.amount} BC {COIN_EMOJI}!", ephemeral=True)
+        global random_event_active
+        random_event_active = False
+        self.stop()
+
+    async def on_timeout(self):
+        global random_event_active
+        random_event_active = False
 
 class ShopView(View):
     def __init__(self, user_id):
@@ -1688,6 +1737,8 @@ async def daily(interaction: discord.Interaction):
     amount = DAILY_AMOUNT
     if users[uid].get("double_daily_until", 0) > now:
         amount *= 2
+    if is_weekend() or "coins" in active_event_types(now):
+        amount *= 2
     bonus = 0
     if streak % 7 == 0:
         bonus = STREAK_BONUS * (streak // 7)
@@ -1804,9 +1855,34 @@ async def giveaway_command(interaction: discord.Interaction):
         return
     await interaction.response.send_modal(GiveawayModal())
 
+# --- KOMENDA EVENT ---
+@client.tree.command(name="event", description="Utwórz nowy event")
+@app_commands.describe(start="Start YYYY-MM-DD HH:MM", end="Koniec YYYY-MM-DD HH:MM", typ="Typ: coins/drop")
+async def event_command(interaction: discord.Interaction, start: str, end: str, typ: str):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("🚫 Tylko administrator może tworzyć event!", ephemeral=True)
+        return
+    try:
+        st = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M").replace(tzinfo=datetime.timezone.utc).timestamp()
+        et = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M").replace(tzinfo=datetime.timezone.utc).timestamp()
+    except Exception:
+        await interaction.response.send_message("❌ Niepoprawny format daty.", ephemeral=True)
+        return
+    events = load_events()
+    events.append({"start": st, "end": et, "type": typ})
+    save_events(events)
+    await interaction.response.send_message("✅ Event utworzony!", ephemeral=True)
+
 # --- Integracja StartIT booster + boost ---
 @client.event
 async def on_message(message):
+    global random_event_active
+    if not message.author.bot and not random_event_active and random.random() < 0.002:
+        random_event_active = True
+        await message.channel.send(
+            "🎁 Szybki bonus! Kto pierwszy kliknie, zgarnia nagrodę.",
+            view=QuickBonusView()
+        )
     if message.author.id != STARTIT_BOT_ID:
         return
     if "kupił booster" in message.content:
@@ -1906,12 +1982,14 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
     headers = {"X-Api-Key": POKETCG_API_KEY}
     users = load_users()
     boost_active = False
+    event_boost = "drop" in active_event_types()
     if user_id and user_id in users:
         ensure_user_fields(users[user_id])
         if users[user_id].get("rare_boost", 0) > 0:
             boost_active = True
             users[user_id]["rare_boost"] -= 1
             save_users(users)
+    boost_active = boost_active or event_boost
     result = []
     async with aiohttp.ClientSession(headers=headers) as session:
         async def get_cards_by_rarity(rarity, count):

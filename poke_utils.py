@@ -7,6 +7,7 @@ USERS_FILE = BASE_DIR / "users.json"
 SETS_FILE = BASE_DIR / "sets.json"
 PRICE_FILE = BASE_DIR / "price.json"
 DATA_FILE = BASE_DIR / "data.json"
+EVENTS_FILE = BASE_DIR / "events.json"
 
 def load_users():
     try:
@@ -85,3 +86,27 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4)
+
+
+def load_events():
+    try:
+        with open(EVENTS_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+
+def save_events(data):
+    with open(EVENTS_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+def active_event_types(now=None):
+    if now is None:
+        now = time.time()
+    events = load_events()
+    types = set()
+    for ev in events:
+        if ev.get("start", 0) <= now <= ev.get("end", 0):
+            types.add(ev.get("type"))
+    return types
