@@ -54,12 +54,39 @@ ACHIEVEMENTS_INFO = {
     "daily_30": "30-dniowy streak daily",
     "top3_week": "TOP 3 drop tygodnia",
     "first_booster": "Pierwszy otwarty booster",
-    "open_10_boosters": "Otwórz 10 boosterów",
+    "open_5_boosters": "Początkujący kolekcjoner (5 boosterów)",
+    "open_25_boosters": "Zaawansowany kolekcjoner (25 boosterów)",
+    "open_100_boosters": "Profesjonalny kolekcjoner (100 boosterów)",
+    "open_500_boosters": "Uzależniony od kart (500 boosterów)",
+    "open_10_boosters": "Otwórz 10 boosterów",  # zachowane dla zgodności
+    "first_card": "Pierwsza karta",
+    "cards_50": "Mała kolekcja (50 kart)",
+    "cards_250": "Duża kolekcja (250 kart)",
+    "cards_1000": "Ogromna kolekcja (1000 kart)",
+    "all_rarities": "Kolekcjoner wszystkich rarów",
+    "first_rare": "Pierwsza karta Rare",
+    "rare_10": "Mistrz Rare (10 różnych)",
+    "rare_50": "Legendarny kolekcjoner (50 Rare)",
+    "first_duplicate": "Pierwszy duplikat",
+    "duplicate_10": "Król duplikatów (10 kopii)",
+    "duplicates_20_cards": "Zbieracz kopii (20 kart x2)",
+    "first_set": "Pierwszy set",
+    "sets_5": "Kolekcjoner setów (5)",
+    "sets_10": "Znawca setów (10)",
+    "sets_all": "Mistrz wszystkich setów",
+    "new_player": "Nowy gracz (1 dzień)",
+    "veteran": "Weteran (30 dni)",
+    "legendary_player": "Legendarny gracz (100 dni)",
 }
 
 def usd_to_bc(usd: float) -> int:
     """Przelicz dolary na BoguckiCoiny."""
     return int(usd * COINS_PER_USD) if usd else 0
+
+def progress_bar(value: int, target: int, length: int = 10) -> str:
+    ratio = min(value / target, 1.0)
+    filled = round(ratio * length)
+    return "🟨" * filled + "⬜" * (length - filled)
 
 def achievement_description(code: str, all_sets) -> str:
     if code.startswith("master:"):
@@ -999,7 +1026,8 @@ class CardRevealView(View):
                         "id": card["id"],
                         "name": card["name"],
                         "price_usd": price or 0,
-                        "img_url": img_url
+                        "img_url": img_url,
+                        "rarity": card.get("rarity", "")
                     })
                     if price and price > max_price:
                         max_price = price
@@ -1009,10 +1037,54 @@ class CardRevealView(View):
                 check_master_set(users[uid], self.parent.set_id, all_sets)
                 users[uid]["boosters_opened"] = users[uid].get("boosters_opened", 0) + 1
                 opened = users[uid]["boosters_opened"]
-                if opened >= 1 and "first_booster" not in users[uid].get("achievements", []):
-                    users[uid].setdefault("achievements", []).append("first_booster")
-                if opened >= 10 and "open_10_boosters" not in users[uid].get("achievements", []):
-                    users[uid].setdefault("achievements", []).append("open_10_boosters")
+                ach_list = users[uid].setdefault("achievements", [])
+                if opened >= 1 and "first_booster" not in ach_list:
+                    ach_list.append("first_booster")
+                if opened >= 5 and "open_5_boosters" not in ach_list:
+                    ach_list.append("open_5_boosters")
+                if opened >= 25 and "open_25_boosters" not in ach_list:
+                    ach_list.append("open_25_boosters")
+                if opened >= 100 and "open_100_boosters" not in ach_list:
+                    ach_list.append("open_100_boosters")
+                if opened >= 500 and "open_500_boosters" not in ach_list:
+                    ach_list.append("open_500_boosters")
+                total_cards = len(users[uid]["cards"])
+                if total_cards >= 1 and "first_card" not in ach_list:
+                    ach_list.append("first_card")
+                if total_cards >= 50 and "cards_50" not in ach_list:
+                    ach_list.append("cards_50")
+                if total_cards >= 250 and "cards_250" not in ach_list:
+                    ach_list.append("cards_250")
+                if total_cards >= 1000 and "cards_1000" not in ach_list:
+                    ach_list.append("cards_1000")
+
+                # Rzadkie karty
+                rare_ids = {c["id"] for c in users[uid]["cards"] if c.get("rarity") == "Rare"}
+                if len(rare_ids) >= 1 and "first_rare" not in ach_list:
+                    ach_list.append("first_rare")
+                if len(rare_ids) >= 10 and "rare_10" not in ach_list:
+                    ach_list.append("rare_10")
+                if len(rare_ids) >= 50 and "rare_50" not in ach_list:
+                    ach_list.append("rare_50")
+
+                counts = Counter(c["id"] for c in users[uid]["cards"])
+                if any(v >= 2 for v in counts.values()) and "first_duplicate" not in ach_list:
+                    ach_list.append("first_duplicate")
+                if any(v >= 10 for v in counts.values()) and "duplicate_10" not in ach_list:
+                    ach_list.append("duplicate_10")
+                if len([v for v in counts.values() if v >= 2]) >= 20 and "duplicates_20_cards" not in ach_list:
+                    ach_list.append("duplicates_20_cards")
+
+                set_ids = {c["id"].split("-")[0] for c in users[uid]["cards"]}
+                if len(set_ids) >= 1 and "first_set" not in ach_list:
+                    ach_list.append("first_set")
+                if len(set_ids) >= 5 and "sets_5" not in ach_list:
+                    ach_list.append("sets_5")
+                if len(set_ids) >= 10 and "sets_10" not in ach_list:
+                    ach_list.append("sets_10")
+                if len(set_ids) == len(all_sets) and "sets_all" not in ach_list:
+                    ach_list.append("sets_all")
+
                 save_users(users)
                 drop_channel = None
                 if hasattr(interaction, "guild") and interaction.guild:
@@ -1096,6 +1168,7 @@ async def start_cmd(interaction: discord.Interaction):
         "daily_streak": 0,
         "weekly_best": {"week": 0, "year": 0, "price": 0},
         "achievements": [],
+        "created_at": int(datetime.datetime.now(datetime.UTC).timestamp()),
     }
     users[uid]["achievements"].append("account_created")
     save_users(users)
@@ -1276,12 +1349,79 @@ async def achievements_cmd(interaction: discord.Interaction):
     if uid not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
-    ensure_user_fields(users[uid])
-    ach = users[uid].get("achievements", [])
+    user = ensure_user_fields(users[uid])
+    ach = user.get("achievements", [])
     all_sets = get_all_sets()
-    lines = [achievement_description(a, all_sets) for a in ach]
-    desc = "\n".join(lines) if lines else "Brak osiągnięć"
-    embed = discord.Embed(title="Twoje osiągnięcia", description=desc, color=discord.Color.green())
+
+    embed = discord.Embed(title="Twoje osiągnięcia", color=discord.Color.green())
+
+    opened = user.get("boosters_opened", 0)
+    for code, target in [
+        ("first_booster", 1),
+        ("open_5_boosters", 5),
+        ("open_25_boosters", 25),
+        ("open_100_boosters", 100),
+        ("open_500_boosters", 500),
+    ]:
+        bar = progress_bar(opened, target)
+        status = "✅" if code in ach else ""
+        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {opened}/{target} {status}", inline=False)
+
+    total_cards = len(user["cards"])
+    for code, target in [
+        ("first_card", 1),
+        ("cards_50", 50),
+        ("cards_250", 250),
+        ("cards_1000", 1000),
+    ]:
+        bar = progress_bar(total_cards, target)
+        status = "✅" if code in ach else ""
+        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {total_cards}/{target} {status}", inline=False)
+
+    rare_ids = {c["id"] for c in user["cards"] if c.get("rarity") == "Rare"}
+    rare_count = len(rare_ids)
+    for code, target in [
+        ("first_rare", 1),
+        ("rare_10", 10),
+        ("rare_50", 50),
+    ]:
+        bar = progress_bar(rare_count, target)
+        status = "✅" if code in ach else ""
+        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {rare_count}/{target} {status}", inline=False)
+
+    counts = Counter(c["id"] for c in user["cards"])
+    max_dup = max(counts.values()) if counts else 0
+    dup20 = len([v for v in counts.values() if v >= 2])
+    for code, value, target in [
+        ("first_duplicate", max_dup, 2),
+        ("duplicate_10", max_dup, 10),
+        ("duplicates_20_cards", dup20, 20),
+    ]:
+        bar = progress_bar(value, target)
+        status = "✅" if code in ach else ""
+        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {value}/{target} {status}", inline=False)
+
+    set_ids = {c["id"].split("-")[0] for c in user["cards"]}
+    for code, target in [
+        ("first_set", 1),
+        ("sets_5", 5),
+        ("sets_10", 10),
+        ("sets_all", len(all_sets)),
+    ]:
+        bar = progress_bar(len(set_ids), target)
+        status = "✅" if code in ach else ""
+        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {len(set_ids)}/{target} {status}", inline=False)
+
+    days = int((datetime.datetime.now(datetime.UTC).timestamp() - user.get("created_at", 0)) / 86400)
+    for code, target in [
+        ("new_player", 1),
+        ("veteran", 30),
+        ("legendary_player", 100),
+    ]:
+        bar = progress_bar(days, target)
+        status = "✅" if code in ach else ""
+        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {days}/{target} {status}", inline=False)
+
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- KOMENDA RANKING ---

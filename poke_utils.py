@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -39,6 +40,7 @@ def ensure_user_fields(user):
     user.setdefault("daily_streak", 0)
     user.setdefault("weekly_best", {"week": 0, "year": 0, "price": 0, "name": ""})
     user.setdefault("achievements", [])
+    user.setdefault("created_at", int(time.time()))
     return user
 
 
