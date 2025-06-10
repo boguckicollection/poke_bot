@@ -75,37 +75,42 @@ async def prefetch_cards_for_sets(set_ids):
 
 EMBED_COLOR = discord.Color.dark_teal()
 
-# Opisy osiągnięć
+# Nazwy i ikonki odznak (osiągnięć)
+BADGE_INFO = {
+    "top3_week": {"name": "TOP 3 drop tygodnia", "emoji": "🏆"},
+    "first_booster": {"name": "Pierwszy otwarty booster", "emoji": "🎴"},
+    "open_5_boosters": {"name": "Początkujący kolekcjoner (5 boosterów)", "emoji": "📦"},
+    "open_25_boosters": {"name": "Zaawansowany kolekcjoner (25 boosterów)", "emoji": "📦📦"},
+    "open_100_boosters": {"name": "Profesjonalny kolekcjoner (100 boosterów)", "emoji": "💼"},
+    "open_500_boosters": {"name": "Uzależniony od kart (500 boosterów)", "emoji": "🃏🃏🃏"},
+    "open_10_boosters": {"name": "Otwórz 10 boosterów", "emoji": "🎁"},
+    "first_card": {"name": "Pierwsza karta", "emoji": "🃏"},
+    "cards_50": {"name": "Mała kolekcja (50 kart)", "emoji": "📚"},
+    "cards_250": {"name": "Duża kolekcja (250 kart)", "emoji": "🗂️"},
+    "cards_1000": {"name": "Ogromna kolekcja (1000 kart)", "emoji": "🏛️"},
+    "all_rarities": {"name": "Kolekcjoner wszystkich rarów", "emoji": "🌈"},
+    "first_rare": {"name": "Pierwsza karta Rare", "emoji": "⭐"},
+    "rare_10": {"name": "Mistrz Rare (10 różnych)", "emoji": "⭐⭐"},
+    "rare_50": {"name": "Legendarny kolekcjoner (50 Rare)", "emoji": "⭐⭐⭐"},
+    "first_duplicate": {"name": "Pierwszy duplikat", "emoji": "🔁"},
+    "duplicate_10": {"name": "Król duplikatów (10 kopii)", "emoji": "👑🔁"},
+    "duplicates_20_cards": {"name": "Zbieracz kopii (20 kart x2)", "emoji": "♻️"},
+    "first_set": {"name": "Pierwszy set", "emoji": "🗃️"},
+    "sets_5": {"name": "Kolekcjoner setów (5)", "emoji": "🗂️"},
+    "sets_10": {"name": "Znawca setów (10)", "emoji": "🗂️📚"},
+    "sets_all": {"name": "Mistrz wszystkich setów", "emoji": "🏅"},
+    "new_player": {"name": "Nowy gracz (1 dzień)", "emoji": "🆕"},
+    "veteran": {"name": "Weteran (30 dni)", "emoji": "🕰️"},
+    "legendary_player": {"name": "Legendarny gracz (100 dni)", "emoji": "🏆🕰️"},
+    "all_achievements": {"name": "Mistrz wszystkich osiągnięć", "emoji": "🏅🏅🏅"},
+}
+
+# Opisy osiągnięć używane w embedach
 ACHIEVEMENTS_INFO = {
     "account_created": "Założenie konta",
     "daily_10": "10-dniowy streak daily",
     "daily_30": "30-dniowy streak daily",
-    "top3_week": "TOP 3 drop tygodnia",
-    "first_booster": "Pierwszy otwarty booster",
-    "open_5_boosters": "Początkujący kolekcjoner (5 boosterów)",
-    "open_25_boosters": "Zaawansowany kolekcjoner (25 boosterów)",
-    "open_100_boosters": "Profesjonalny kolekcjoner (100 boosterów)",
-    "open_500_boosters": "Uzależniony od kart (500 boosterów)",
-    "open_10_boosters": "Otwórz 10 boosterów",  # zachowane dla zgodności
-    "first_card": "Pierwsza karta",
-    "cards_50": "Mała kolekcja (50 kart)",
-    "cards_250": "Duża kolekcja (250 kart)",
-    "cards_1000": "Ogromna kolekcja (1000 kart)",
-    "all_rarities": "Kolekcjoner wszystkich rarów",
-    "first_rare": "Pierwsza karta Rare",
-    "rare_10": "Mistrz Rare (10 różnych)",
-    "rare_50": "Legendarny kolekcjoner (50 Rare)",
-    "first_duplicate": "Pierwszy duplikat",
-    "duplicate_10": "Król duplikatów (10 kopii)",
-    "duplicates_20_cards": "Zbieracz kopii (20 kart x2)",
-    "first_set": "Pierwszy set",
-    "sets_5": "Kolekcjoner setów (5)",
-    "sets_10": "Znawca setów (10)",
-    "sets_all": "Mistrz wszystkich setów",
-    "new_player": "Nowy gracz (1 dzień)",
-    "veteran": "Weteran (30 dni)",
-    "legendary_player": "Legendarny gracz (100 dni)",
-    "all_achievements": "Mistrz wszystkich osiągnięć",
+    **{k: v["name"] for k, v in BADGE_INFO.items()},
 }
 
 # Nagrody pieniężne za osiągnięcia (w BC)
@@ -220,16 +225,22 @@ def achievement_description(code: str, all_sets) -> str:
         sid = code.split(":", 1)[1]
         name = next((s["name"] for s in all_sets if s["id"] == sid), sid)
         return f"🏆 Master set {name}"
-    return f"🏅 {ACHIEVEMENTS_INFO.get(code, code)}"
+    info = BADGE_INFO.get(code)
+    emoji = info["emoji"] if info else "🏅"
+    name = info["name"] if info else ACHIEVEMENTS_INFO.get(code, code)
+    return f"{emoji} {name}"
 
 
 async def send_achievement_message(interaction_or_user, code: str):
     """Wyślij graczowi gratulacje z osiągnięcia."""
     reward = ACHIEVEMENT_REWARDS.get(code, 0)
+    info = BADGE_INFO.get(code)
+    name = info["name"] if info else ACHIEVEMENTS_INFO.get(code, code)
+    emoji = f"{info['emoji']} " if info else ""
     embed = discord.Embed(
         title="Nowe osiągnięcie!",
         description=(
-            f"Gratulacje! Zdobywasz **{ACHIEVEMENTS_INFO.get(code, code)}**\n"
+            f"Gratulacje! Zdobywasz {emoji}**{name}**\n"
             f"Nagroda: {reward} BC {COIN_EMOJI}"
         ),
         color=discord.Color.gold(),
@@ -254,6 +265,8 @@ def grant_achievement(user: dict, code: str) -> bool:
     if code in user.setdefault("achievements", []):
         return False
     user["achievements"].append(code)
+    if code in BADGE_INFO and code not in user.setdefault("badges", []):
+        user["badges"].append(code)
     reward = ACHIEVEMENT_REWARDS.get(code, ACHIEVEMENT_REWARDS.get("master", 0) if code.startswith("master:") else 0)
     user["money"] = user.get("money", 0) + reward
     return True
@@ -306,7 +319,9 @@ def build_achievement_pages(user, all_sets):
                 value = 1 if code in ach else 0
             bar = progress_bar(value, tgt)
             status = "✅" if code in ach else ""
-            embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {value}/{tgt} {status}", inline=False)
+            info = BADGE_INFO.get(code)
+            name = f"{info['emoji']} {info['name']}" if info else ACHIEVEMENTS_INFO.get(code, code)
+            embed.add_field(name=name, value=f"{bar} {value}/{tgt} {status}", inline=False)
         pages.append(embed)
     return pages
 
@@ -1482,6 +1497,7 @@ async def start_cmd(interaction: discord.Interaction):
         "daily_streak": 0,
         "weekly_best": {"week": 0, "year": 0, "price": 0},
         "achievements": [],
+        "badges": [],
         "created_at": int(datetime.datetime.now(datetime.UTC).timestamp()),
     }
     users[uid]["achievements"].append("account_created")
