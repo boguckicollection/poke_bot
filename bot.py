@@ -27,9 +27,8 @@ import datetime
 import time
 
 # Ile BoguckiCoinów odpowiada jednemu dolarowi
-# Przyjęto nieco niższy przelicznik, aby zbilansować
-# ceny w sklepie względem dziennych nagród
-COINS_PER_USD = 20
+# Nowy przelicznik 1 USD = 3 BC
+COINS_PER_USD = 3
 
 # Prosty cache kart pobranych z API {set_id: {rarity: [cards]}}
 CARD_CACHE = {}
@@ -411,15 +410,6 @@ ITEMS = {
     },
 }
 
-# Grafika tyłu karty używana w animacji odsłaniania
-CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000_QL80_DpWeblab_.jpg"
-# lub jeśli chcesz użyć oficjalnego:
-# CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
-
-# Czy podczas odsłaniania kolejnych kart pokazywać najpierw tył karty
-# i na jaki czas (w sekundach). Wyłączenie przyspiesza otwieranie boosterów.
-SHOW_CARD_BACK = False
-CARD_REVEAL_DELAY = 0.7
 
 # Grafika nagłówka sklepu
 SHOP_IMAGE_PATH = GRAPHIC_DIR / "shop.png"
@@ -656,12 +646,13 @@ class QuickBuyView(View):
 
 
 class QuickBonusView(View):
-    def __init__(self, amount=50):
+    def __init__(self, amount=None, booster_id=None):
         super().__init__(timeout=30)
         self.claimed = False
         self.amount = amount
+        self.booster_id = booster_id
 
-    @discord.ui.button(label="Zgarnij bonus", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="Zgarniam", style=discord.ButtonStyle.success)
     async def claim(self, interaction: discord.Interaction, button: Button):
         if self.claimed:
             await interaction.response.send_message("Ktoś był szybszy!", ephemeral=True)
@@ -672,11 +663,19 @@ class QuickBonusView(View):
             await interaction.response.send_message("📭 Nie masz konta.", ephemeral=True)
             return
         ensure_user_fields(users[uid])
-        users[uid]["money"] = users[uid].get("money", 0) + self.amount
-        users[uid]["money_events"] = users[uid].get("money_events", 0) + self.amount
-        save_users(users)
+        if self.booster_id:
+            users[uid]["boosters"].append(self.booster_id)
+            save_users(users)
+            name = next((s["name"] for s in get_all_sets() if s["id"] == self.booster_id), self.booster_id)
+            msg = f"🎉 Otrzymujesz booster **{name}**!"
+        else:
+            amount = self.amount or 0
+            users[uid]["money"] = users[uid].get("money", 0) + amount
+            users[uid]["money_events"] = users[uid].get("money_events", 0) + amount
+            save_users(users)
+            msg = f"🎉 Otrzymujesz {amount} BC {COIN_EMOJI}!"
         self.claimed = True
-        await interaction.response.send_message(f"🎉 Otrzymujesz {self.amount} BC {COIN_EMOJI}!", ephemeral=True)
+        await interaction.response.send_message(msg, ephemeral=True)
         global random_event_active
         random_event_active = False
         self.stop()
@@ -1362,13 +1361,7 @@ class CardRevealView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            if SHOW_CARD_BACK:
-                back = discord.Embed()
-                back.set_image(url=CARD_BACK_URL)
-                await interaction.response.edit_message(embed=back, view=self.parent, attachments=[])
-                await asyncio.sleep(CARD_REVEAL_DELAY)
-            else:
-                await interaction.response.defer()
+            await interaction.response.defer()
             self.parent.index += 1
             await self.parent.show_card(interaction, first=False)
 
@@ -1963,10 +1956,21 @@ async def on_message(message):
     global random_event_active
     if not message.author.bot and not random_event_active and random.random() < 0.002:
         random_event_active = True
-        await message.channel.send(
-            "🎁 Szybki bonus! Kto pierwszy kliknie, zgarnia nagrodę.",
-            view=QuickBonusView()
-        )
+        if random.random() < 0.5:
+            amount = random.randint(20, 50)
+            await message.channel.send(
+                f"🎁 Gratis {amount} BC {COIN_EMOJI}! Kto pierwszy kliknie, zgarnia.",
+                view=QuickBonusView(amount=amount)
+            )
+        else:
+            sets = get_all_sets()
+            chosen = weighted_random_set(sets)
+            name = chosen.get("name", chosen.get("id")) if chosen else "booster"
+            sid = chosen.get("id") if chosen else None
+            await message.channel.send(
+                f"🎁 Darmowy booster **{name}**! Kto pierwszy kliknie, zgarnia.",
+                view=QuickBonusView(booster_id=sid)
+            )
     if message.author.id != STARTIT_BOT_ID:
         return
     if "kupił booster" in message.content:
