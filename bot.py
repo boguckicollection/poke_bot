@@ -77,7 +77,106 @@ ACHIEVEMENTS_INFO = {
     "new_player": "Nowy gracz (1 dzień)",
     "veteran": "Weteran (30 dni)",
     "legendary_player": "Legendarny gracz (100 dni)",
+    "all_achievements": "Mistrz wszystkich osiągnięć",
 }
+
+# Nagrody pieniężne za osiągnięcia (w BC)
+ACHIEVEMENT_REWARDS = {
+    "account_created": 10,
+    "daily_10": 50,
+    "daily_30": 100,
+    "top3_week": 150,
+    "first_booster": 20,
+    "open_5_boosters": 50,
+    "open_25_boosters": 100,
+    "open_100_boosters": 200,
+    "open_500_boosters": 500,
+    "first_card": 20,
+    "cards_50": 50,
+    "cards_250": 100,
+    "cards_1000": 200,
+    "first_rare": 20,
+    "rare_10": 100,
+    "rare_50": 300,
+    "first_duplicate": 20,
+    "duplicate_10": 100,
+    "duplicates_20_cards": 200,
+    "first_set": 50,
+    "sets_5": 100,
+    "sets_10": 200,
+    "sets_all": 500,
+    "new_player": 10,
+    "veteran": 50,
+    "legendary_player": 200,
+    "master": 200,
+    "all_achievements": 1000,
+}
+
+# Grupowanie osiągnięć na potrzeby paginacji
+ACHIEVEMENT_GROUPS = [
+    (
+        "Otwieranie boosterów",
+        [
+            ("first_booster", 1),
+            ("open_5_boosters", 5),
+            ("open_25_boosters", 25),
+            ("open_100_boosters", 100),
+            ("open_500_boosters", 500),
+        ],
+    ),
+    (
+        "Rozmiar kolekcji",
+        [
+            ("first_card", 1),
+            ("cards_50", 50),
+            ("cards_250", 250),
+            ("cards_1000", 1000),
+        ],
+    ),
+    (
+        "Rzadkie karty",
+        [
+            ("first_rare", 1),
+            ("rare_10", 10),
+            ("rare_50", 50),
+        ],
+    ),
+    (
+        "Duplikaty kart",
+        [
+            ("first_duplicate", 2),
+            ("duplicate_10", 10),
+            ("duplicates_20_cards", 20),
+        ],
+    ),
+    (
+        "Zbiory setów",
+        [
+            ("first_set", 1),
+            ("sets_5", 5),
+            ("sets_10", 10),
+            ("sets_all", 0),  # target uzupełniany później
+        ],
+    ),
+    (
+        "Czas gry",
+        [
+            ("new_player", 1),
+            ("veteran", 30),
+            ("legendary_player", 100),
+        ],
+    ),
+    (
+        "Pozostałe",
+        [
+            ("account_created", 1),
+            ("daily_10", 10),
+            ("daily_30", 30),
+            ("top3_week", 1),
+            ("all_achievements", 1),
+        ],
+    ),
+]
 
 def usd_to_bc(usd: float) -> int:
     """Przelicz dolary na BoguckiCoiny."""
@@ -94,6 +193,94 @@ def achievement_description(code: str, all_sets) -> str:
         name = next((s["name"] for s in all_sets if s["id"] == sid), sid)
         return f"🏆 Master set {name}"
     return f"🏅 {ACHIEVEMENTS_INFO.get(code, code)}"
+
+
+async def send_achievement_message(interaction_or_user, code: str):
+    """Wyślij graczowi gratulacje z osiągnięcia."""
+    reward = ACHIEVEMENT_REWARDS.get(code, 0)
+    embed = discord.Embed(
+        title="Nowe osiągnięcie!",
+        description=(
+            f"Gratulacje! Zdobywasz **{ACHIEVEMENTS_INFO.get(code, code)}**\n"
+            f"Nagroda: {reward} BC {COIN_EMOJI}"
+        ),
+        color=discord.Color.gold(),
+    )
+
+    class GoAchievementsView(View):
+        @discord.ui.button(label="Otwórz osiągnięcia", style=discord.ButtonStyle.primary)
+        async def show(self, i: discord.Interaction, _):
+            await achievements_cmd(i)
+
+    if isinstance(interaction_or_user, discord.Interaction):
+        await interaction_or_user.followup.send(embed=embed, view=GoAchievementsView(), ephemeral=True)
+    else:
+        try:
+            await interaction_or_user.send(embed=embed, view=GoAchievementsView())
+        except Exception:
+            pass
+
+
+def grant_achievement(user: dict, code: str) -> bool:
+    """Dodaj osiągnięcie i przyznaj nagrodę. Zwraca True gdy nowe."""
+    if code in user.setdefault("achievements", []):
+        return False
+    user["achievements"].append(code)
+    reward = ACHIEVEMENT_REWARDS.get(code, ACHIEVEMENT_REWARDS.get("master", 0) if code.startswith("master:") else 0)
+    user["money"] = user.get("money", 0) + reward
+    return True
+
+
+def check_for_all_achievements(user: dict) -> bool:
+    """Sprawdź czy użytkownik zdobył wszystkie osiągnięcia."""
+    required = set(ACHIEVEMENTS_INFO.keys()) - {"all_achievements"}
+    return required.issubset(set(user.get("achievements", [])))
+
+
+def build_achievement_pages(user, all_sets):
+    """Zbuduj listę embedów przedstawiających postępy w osiągnięciach."""
+    ach = user.get("achievements", [])
+    opened = user.get("boosters_opened", 0)
+    total_cards = len(user["cards"])
+    rare_ids = {c["id"] for c in user["cards"] if c.get("rarity") == "Rare"}
+    rare_count = len(rare_ids)
+    counts = Counter(c["id"] for c in user["cards"])
+    max_dup = max(counts.values()) if counts else 0
+    dup20 = len([v for v in counts.values() if v >= 2])
+    set_ids = {c["id"].split("-")[0] for c in user["cards"]}
+    days = int((datetime.datetime.now(datetime.UTC).timestamp() - user.get("created_at", 0)) / 86400)
+    pages = []
+    for title, entries in ACHIEVEMENT_GROUPS:
+        embed = discord.Embed(title=title, color=discord.Color.green())
+        for code, target in entries:
+            value = 0
+            tgt = target
+            if code in {"first_booster", "open_5_boosters", "open_25_boosters", "open_100_boosters", "open_500_boosters"}:
+                value = opened
+            elif code in {"first_card", "cards_50", "cards_250", "cards_1000"}:
+                value = total_cards
+            elif code in {"first_rare", "rare_10", "rare_50"}:
+                value = rare_count
+            elif code == "duplicates_20_cards":
+                value = dup20
+            elif code in {"first_duplicate", "duplicate_10"}:
+                value = max_dup
+            elif code in {"first_set", "sets_5", "sets_10", "sets_all"}:
+                value = len(set_ids)
+                if code == "sets_all":
+                    tgt = len(all_sets)
+            elif code in {"new_player", "veteran", "legendary_player"}:
+                value = days
+            elif code in {"daily_10", "daily_30"}:
+                value = user.get("daily_streak", 0)
+                tgt = target
+            elif code in {"account_created", "top3_week", "all_achievements"}:
+                value = 1 if code in ach else 0
+            bar = progress_bar(value, tgt)
+            status = "✅" if code in ach else ""
+            embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {value}/{tgt} {status}", inline=False)
+        pages.append(embed)
+    return pages
 
 # --- parametry ekonomii ---
 START_MONEY = 100
@@ -272,9 +459,7 @@ def check_master_set(user, set_id, all_sets):
     owned = len({c["id"] for c in user["cards"] if c["id"].startswith(set_id)})
     if total > 0 and owned >= total:
         ach = f"master:{set_id}"
-        if ach not in user.setdefault("achievements", []):
-            user["achievements"].append(ach)
-            return True
+        return grant_achievement(user, ach)
     return False
 
 def booster_image_url(set_id: str) -> str:
@@ -615,9 +800,16 @@ class MyClient(discord.Client):
                     users[uid]["money"] = users[uid].get("money", 0) + reward
                     bc = usd_to_bc(price)
                     lines.append(f"{idx+1}. <@{uid}> - {name} ({bc} BC {COIN_EMOJI})")
-                    if "top3_week" not in users[uid].get("achievements", []):
-                        users[uid].setdefault("achievements", []).append("top3_week")
+                    new_codes = []
+                    if grant_achievement(users[uid], "top3_week"):
+                        new_codes.append("top3_week")
+                    if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
+                        new_codes.append("all_achievements")
                     changed = True
+                    for code in new_codes:
+                        user_obj = self.get_user(int(uid))
+                        if user_obj:
+                            await send_achievement_message(user_obj, code)
                 if lines:
                     embed = discord.Embed(
                         title="TOP 3 dropy tygodnia",
@@ -987,6 +1179,40 @@ class CardRevealView(View):
         else:
             await interaction.response.edit_message(embed=embed, view=self, attachments=[])
 
+
+class AchievementsView(View):
+    def __init__(self, embeds, user_id):
+        super().__init__(timeout=120)
+        self.embeds = embeds
+        self.index = 0
+        self.user_id = str(user_id)
+        if len(embeds) > 1:
+            self.add_item(self.PrevButton(self))
+            self.add_item(self.NextButton(self))
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return str(interaction.user.id) == self.user_id
+
+    class PrevButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="⬅️", style=discord.ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            if self.parent.index > 0:
+                self.parent.index -= 1
+            await interaction.response.edit_message(embed=self.parent.embeds[self.parent.index], view=self.parent)
+
+    class NextButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="➡️", style=discord.ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            if self.parent.index < len(self.parent.embeds) - 1:
+                self.parent.index += 1
+            await interaction.response.edit_message(embed=self.parent.embeds[self.parent.index], view=self.parent)
+
     class NextCardButton(Button):
         def __init__(self, parent):
             super().__init__(label="➡️ Następna karta", style=discord.ButtonStyle.primary)
@@ -1034,58 +1260,65 @@ class CardRevealView(View):
                         max_name = card["name"]
                 update_weekly_best(users[uid], max_price, max_name)
                 all_sets = get_all_sets()
-                check_master_set(users[uid], self.parent.set_id, all_sets)
+                if check_master_set(users[uid], self.parent.set_id, all_sets):
+                    new_codes.append(f"master:{self.parent.set_id}")
                 users[uid]["boosters_opened"] = users[uid].get("boosters_opened", 0) + 1
                 opened = users[uid]["boosters_opened"]
                 ach_list = users[uid].setdefault("achievements", [])
-                if opened >= 1 and "first_booster" not in ach_list:
-                    ach_list.append("first_booster")
-                if opened >= 5 and "open_5_boosters" not in ach_list:
-                    ach_list.append("open_5_boosters")
-                if opened >= 25 and "open_25_boosters" not in ach_list:
-                    ach_list.append("open_25_boosters")
-                if opened >= 100 and "open_100_boosters" not in ach_list:
-                    ach_list.append("open_100_boosters")
-                if opened >= 500 and "open_500_boosters" not in ach_list:
-                    ach_list.append("open_500_boosters")
+                new_codes = []
+                if opened >= 1 and grant_achievement(users[uid], "first_booster"):
+                    new_codes.append("first_booster")
+                if opened >= 5 and grant_achievement(users[uid], "open_5_boosters"):
+                    new_codes.append("open_5_boosters")
+                if opened >= 25 and grant_achievement(users[uid], "open_25_boosters"):
+                    new_codes.append("open_25_boosters")
+                if opened >= 100 and grant_achievement(users[uid], "open_100_boosters"):
+                    new_codes.append("open_100_boosters")
+                if opened >= 500 and grant_achievement(users[uid], "open_500_boosters"):
+                    new_codes.append("open_500_boosters")
                 total_cards = len(users[uid]["cards"])
-                if total_cards >= 1 and "first_card" not in ach_list:
-                    ach_list.append("first_card")
-                if total_cards >= 50 and "cards_50" not in ach_list:
-                    ach_list.append("cards_50")
-                if total_cards >= 250 and "cards_250" not in ach_list:
-                    ach_list.append("cards_250")
-                if total_cards >= 1000 and "cards_1000" not in ach_list:
-                    ach_list.append("cards_1000")
+                if total_cards >= 1 and grant_achievement(users[uid], "first_card"):
+                    new_codes.append("first_card")
+                if total_cards >= 50 and grant_achievement(users[uid], "cards_50"):
+                    new_codes.append("cards_50")
+                if total_cards >= 250 and grant_achievement(users[uid], "cards_250"):
+                    new_codes.append("cards_250")
+                if total_cards >= 1000 and grant_achievement(users[uid], "cards_1000"):
+                    new_codes.append("cards_1000")
 
                 # Rzadkie karty
                 rare_ids = {c["id"] for c in users[uid]["cards"] if c.get("rarity") == "Rare"}
-                if len(rare_ids) >= 1 and "first_rare" not in ach_list:
-                    ach_list.append("first_rare")
-                if len(rare_ids) >= 10 and "rare_10" not in ach_list:
-                    ach_list.append("rare_10")
-                if len(rare_ids) >= 50 and "rare_50" not in ach_list:
-                    ach_list.append("rare_50")
+                if len(rare_ids) >= 1 and grant_achievement(users[uid], "first_rare"):
+                    new_codes.append("first_rare")
+                if len(rare_ids) >= 10 and grant_achievement(users[uid], "rare_10"):
+                    new_codes.append("rare_10")
+                if len(rare_ids) >= 50 and grant_achievement(users[uid], "rare_50"):
+                    new_codes.append("rare_50")
 
                 counts = Counter(c["id"] for c in users[uid]["cards"])
-                if any(v >= 2 for v in counts.values()) and "first_duplicate" not in ach_list:
-                    ach_list.append("first_duplicate")
-                if any(v >= 10 for v in counts.values()) and "duplicate_10" not in ach_list:
-                    ach_list.append("duplicate_10")
-                if len([v for v in counts.values() if v >= 2]) >= 20 and "duplicates_20_cards" not in ach_list:
-                    ach_list.append("duplicates_20_cards")
+                if any(v >= 2 for v in counts.values()) and grant_achievement(users[uid], "first_duplicate"):
+                    new_codes.append("first_duplicate")
+                if any(v >= 10 for v in counts.values()) and grant_achievement(users[uid], "duplicate_10"):
+                    new_codes.append("duplicate_10")
+                if len([v for v in counts.values() if v >= 2]) >= 20 and grant_achievement(users[uid], "duplicates_20_cards"):
+                    new_codes.append("duplicates_20_cards")
 
                 set_ids = {c["id"].split("-")[0] for c in users[uid]["cards"]}
-                if len(set_ids) >= 1 and "first_set" not in ach_list:
-                    ach_list.append("first_set")
-                if len(set_ids) >= 5 and "sets_5" not in ach_list:
-                    ach_list.append("sets_5")
-                if len(set_ids) >= 10 and "sets_10" not in ach_list:
-                    ach_list.append("sets_10")
-                if len(set_ids) == len(all_sets) and "sets_all" not in ach_list:
-                    ach_list.append("sets_all")
+                if len(set_ids) >= 1 and grant_achievement(users[uid], "first_set"):
+                    new_codes.append("first_set")
+                if len(set_ids) >= 5 and grant_achievement(users[uid], "sets_5"):
+                    new_codes.append("sets_5")
+                if len(set_ids) >= 10 and grant_achievement(users[uid], "sets_10"):
+                    new_codes.append("sets_10")
+                if len(set_ids) == len(all_sets) and grant_achievement(users[uid], "sets_all"):
+                    new_codes.append("sets_all")
+
+                if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
+                    new_codes.append("all_achievements")
 
                 save_users(users)
+                for code in new_codes:
+                    await send_achievement_message(interaction, code)
                 drop_channel = None
                 if hasattr(interaction, "guild") and interaction.guild:
                     drop_channel = interaction.guild.get_channel(DROP_CHANNEL_ID)
@@ -1171,6 +1404,7 @@ async def start_cmd(interaction: discord.Interaction):
         "created_at": int(datetime.datetime.now(datetime.UTC).timestamp()),
     }
     users[uid]["achievements"].append("account_created")
+    users[uid]["money"] += ACHIEVEMENT_REWARDS.get("account_created", 0)
     save_users(users)
     welcome = (
         "**Witaj w Pok\xe9 Booster Bot!**\n"
@@ -1180,6 +1414,7 @@ async def start_cmd(interaction: discord.Interaction):
         f"✅ Utworzono konto! Otrzymujesz {START_MONEY} BC {COIN_EMOJI}"
     )
     await interaction.response.send_message(welcome, ephemeral=True)
+    await send_achievement_message(interaction, "account_created")
     try:
         await interaction.channel.send(
             f"🎉 {interaction.user.mention} dołączył do gry! Witamy!"
@@ -1303,10 +1538,11 @@ async def daily(interaction: discord.Interaction):
         else:
             streak = 1
     users[uid]["daily_streak"] = streak
-    if streak >= 10 and "daily_10" not in users[uid].get("achievements", []):
-        users[uid].setdefault("achievements", []).append("daily_10")
-    if streak >= 30 and "daily_30" not in users[uid].get("achievements", []):
-        users[uid].setdefault("achievements", []).append("daily_30")
+    new_codes = []
+    if streak >= 10 and grant_achievement(users[uid], "daily_10"):
+        new_codes.append("daily_10")
+    if streak >= 30 and grant_achievement(users[uid], "daily_30"):
+        new_codes.append("daily_30")
     amount = DAILY_AMOUNT
     if users[uid].get("double_daily_until", 0) > now:
         amount *= 2
@@ -1316,7 +1552,11 @@ async def daily(interaction: discord.Interaction):
     total_gain = amount + bonus
     users[uid]["money"] = users[uid].get("money", 0) + total_gain
     users[uid]["last_daily"] = now
+    if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
+        new_codes.append("all_achievements")
     save_users(users)
+    for code in new_codes:
+        await send_achievement_message(interaction, code)
     emj = random.choice(FUN_EMOJIS)
     day = (streak - 1) % 7 + 1
     msg = f"{emj} Otrzymujesz {amount} BC {COIN_EMOJI}! (dzień {day}/7)"
@@ -1350,79 +1590,12 @@ async def achievements_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     user = ensure_user_fields(users[uid])
-    ach = user.get("achievements", [])
     all_sets = get_all_sets()
 
-    embed = discord.Embed(title="Twoje osiągnięcia", color=discord.Color.green())
-
-    opened = user.get("boosters_opened", 0)
-    for code, target in [
-        ("first_booster", 1),
-        ("open_5_boosters", 5),
-        ("open_25_boosters", 25),
-        ("open_100_boosters", 100),
-        ("open_500_boosters", 500),
-    ]:
-        bar = progress_bar(opened, target)
-        status = "✅" if code in ach else ""
-        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {opened}/{target} {status}", inline=False)
-
-    total_cards = len(user["cards"])
-    for code, target in [
-        ("first_card", 1),
-        ("cards_50", 50),
-        ("cards_250", 250),
-        ("cards_1000", 1000),
-    ]:
-        bar = progress_bar(total_cards, target)
-        status = "✅" if code in ach else ""
-        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {total_cards}/{target} {status}", inline=False)
-
-    rare_ids = {c["id"] for c in user["cards"] if c.get("rarity") == "Rare"}
-    rare_count = len(rare_ids)
-    for code, target in [
-        ("first_rare", 1),
-        ("rare_10", 10),
-        ("rare_50", 50),
-    ]:
-        bar = progress_bar(rare_count, target)
-        status = "✅" if code in ach else ""
-        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {rare_count}/{target} {status}", inline=False)
-
-    counts = Counter(c["id"] for c in user["cards"])
-    max_dup = max(counts.values()) if counts else 0
-    dup20 = len([v for v in counts.values() if v >= 2])
-    for code, value, target in [
-        ("first_duplicate", max_dup, 2),
-        ("duplicate_10", max_dup, 10),
-        ("duplicates_20_cards", dup20, 20),
-    ]:
-        bar = progress_bar(value, target)
-        status = "✅" if code in ach else ""
-        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {value}/{target} {status}", inline=False)
-
-    set_ids = {c["id"].split("-")[0] for c in user["cards"]}
-    for code, target in [
-        ("first_set", 1),
-        ("sets_5", 5),
-        ("sets_10", 10),
-        ("sets_all", len(all_sets)),
-    ]:
-        bar = progress_bar(len(set_ids), target)
-        status = "✅" if code in ach else ""
-        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {len(set_ids)}/{target} {status}", inline=False)
-
-    days = int((datetime.datetime.now(datetime.UTC).timestamp() - user.get("created_at", 0)) / 86400)
-    for code, target in [
-        ("new_player", 1),
-        ("veteran", 30),
-        ("legendary_player", 100),
-    ]:
-        bar = progress_bar(days, target)
-        status = "✅" if code in ach else ""
-        embed.add_field(name=ACHIEVEMENTS_INFO.get(code, code), value=f"{bar} {days}/{target} {status}", inline=False)
-
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    pages = build_achievement_pages(user, all_sets)
+    view = AchievementsView(pages, uid)
+    await interaction.response.send_message(embed=pages[0], view=view, ephemeral=True)
+    view.message = await interaction.original_response()
 
 # --- KOMENDA RANKING ---
 @client.tree.command(name="ranking", description="Najlepsze dropy tygodnia")
@@ -1445,13 +1618,23 @@ async def ranking_cmd(interaction: discord.Interaction):
     embed = discord.Embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
     await interaction.response.send_message(embed=embed, ephemeral=True)
     changed = False
+    notify = []
     for uid,_ in top3:
         ensure_user_fields(users[uid])
-        if "top3_week" not in users[uid].get("achievements", []):
-            users[uid].setdefault("achievements", []).append("top3_week")
+        if grant_achievement(users[uid], "top3_week"):
+            notify.append(uid)
+            changed = True
+        if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
+            notify.append(uid)
             changed = True
     if changed:
         save_users(users)
+        for nuid in notify:
+            user_obj = interaction.client.get_user(int(nuid))
+            if user_obj:
+                for code in ("top3_week", "all_achievements"):
+                    if code in users[nuid]["achievements"]:
+                        await send_achievement_message(user_obj, code)
 
 # --- KOMENDA HELP ---
 @client.tree.command(name="help", description="Lista komend bota")
