@@ -1512,6 +1512,9 @@ class CardRevealView(View):
         return str(interaction.user.id) == self.user_id
 
     async def show_card(self, interaction, first=False):
+        if self.index >= len(self.cards):
+            await self.finalize(interaction)
+            return
         card = self.cards[self.index]
         rarity = card.get("rarity", "Unknown")
         emoji = RARITY_EMOJIS.get(rarity, "❔")
