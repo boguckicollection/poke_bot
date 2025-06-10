@@ -416,6 +416,11 @@ CARD_BACK_URL = "https://m.media-amazon.com/images/I/61vOBvbsYJL._AC_UF1000,1000
 # lub jeśli chcesz użyć oficjalnego:
 # CARD_BACK_URL = "https://images.pokemontcg.io/other/official-backs/2021.jpg"
 
+# Czy podczas odsłaniania kolejnych kart pokazywać najpierw tył karty
+# i na jaki czas (w sekundach). Wyłączenie przyspiesza otwieranie boosterów.
+SHOW_CARD_BACK = False
+CARD_REVEAL_DELAY = 0.7
+
 # Grafika nagłówka sklepu
 SHOP_IMAGE_PATH = GRAPHIC_DIR / "shop.png"
 # Ikona waluty
@@ -1357,10 +1362,13 @@ class CardRevealView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            back = discord.Embed()
-            back.set_image(url=CARD_BACK_URL)
-            await interaction.response.edit_message(embed=back, view=self.parent, attachments=[])
-            await asyncio.sleep(0.7)
+            if SHOW_CARD_BACK:
+                back = discord.Embed()
+                back.set_image(url=CARD_BACK_URL)
+                await interaction.response.edit_message(embed=back, view=self.parent, attachments=[])
+                await asyncio.sleep(CARD_REVEAL_DELAY)
+            else:
+                await interaction.response.defer()
             self.parent.index += 1
             await self.parent.show_card(interaction, first=False)
 
