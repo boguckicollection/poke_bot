@@ -1233,6 +1233,7 @@ class CardRevealView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
+            await interaction.response.defer()
             users = load_users()
             uid = str(self.parent.user_id)
             if uid in users:
