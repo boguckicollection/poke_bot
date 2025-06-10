@@ -13,6 +13,8 @@ from poke_utils import (
     load_events,
     save_events,
     active_event_types,
+    EMBED_COLOR,
+    create_embed,
 )
 import os
 import json
@@ -101,7 +103,6 @@ async def prefetch_cards_for_sets(set_ids):
             await fetch_all_cards_for_set(session, sid)
     save_card_cache()
 
-EMBED_COLOR = discord.Color.dark_teal()
 
 # Nazwy i ikonki odznak (osiągnięć)
 BADGE_INFO = {
@@ -265,7 +266,7 @@ async def send_achievement_message(interaction_or_user, code: str):
     info = BADGE_INFO.get(code)
     name = info["name"] if info else ACHIEVEMENTS_INFO.get(code, code)
     emoji = f"{info['emoji']} " if info else ""
-    embed = discord.Embed(
+    embed = create_embed(
         title="Nowe osiągnięcie!",
         description=(
             f"Gratulacje! Zdobywasz {emoji}**{name}**\n"
@@ -324,7 +325,7 @@ def build_achievement_pages(user, all_sets):
     days = int((datetime.datetime.now(datetime.UTC).timestamp() - user.get("created_at", 0)) / 86400)
     pages = []
     for title, entries in ACHIEVEMENT_GROUPS:
-        embed = discord.Embed(title=title, color=discord.Color.green())
+        embed = create_embed(title=title, color=discord.Color.green())
         embed.set_image(url="attachment://achivment.png")
         for code, target in entries:
             value = 0
@@ -509,7 +510,7 @@ def build_cart_embed(user_id, message):
     money = user.get("money", 0)
     cart = carts.get(user_id, {"boosters": {}, "items": {}})
     total = compute_cart_total(cart)
-    embed = discord.Embed(title="Koszyk", description=message, color=EMBED_COLOR)
+    embed = create_embed(title="Koszyk", description=message, color=EMBED_COLOR)
     embed.set_thumbnail(url="attachment://koszyk.png")
     embed.add_field(name="Wartość koszyka", value=f"{total} BC {COIN_EMOJI}", inline=False)
     embed.add_field(name="Twoje saldo", value=f"{money} BC {COIN_EMOJI}", inline=False)
@@ -556,7 +557,7 @@ def booster_image_url(set_id: str) -> str:
 def build_shop_embed(user_id):
     sets = get_all_sets()
     purchases = load_data()
-    embed = discord.Embed(
+    embed = create_embed(
         title="Sklep",
         description=(
             "W sklepie znajdziesz boostery i itemy. "
@@ -816,17 +817,17 @@ class ShopView(View):
                                     modal = QuantityModal(after_qty)
                                     await i4.response.send_modal(modal)
 
-                            embed = discord.Embed(title="Wybierz set", color=EMBED_COLOR)
+                            embed = create_embed(title="Wybierz set", color=EMBED_COLOR)
                             embed.set_image(url="attachment://wybierz_set.png")
                             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                             await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
 
-                    embed = discord.Embed(title="Wybierz erę", color=EMBED_COLOR)
+                    embed = create_embed(title="Wybierz erę", color=EMBED_COLOR)
                     embed.set_image(url="attachment://wybierz_set.png")
                     file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                     await i2.response.edit_message(embed=embed, view=EraView(self.parent.parent), attachments=[file])
 
-            embed = discord.Embed(title="Wybierz język", color=EMBED_COLOR)
+            embed = create_embed(title="Wybierz język", color=EMBED_COLOR)
             embed.set_image(url="attachment://wybierz_set.png")
             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
             await interaction.response.send_message(embed=embed, view=LanguageView(self), ephemeral=True, file=file)
@@ -860,7 +861,7 @@ class ShopView(View):
                     modal = QuantityModal(after_qty)
                     await i2.response.send_modal(modal)
 
-            embed = discord.Embed(title="Wybierz item", color=EMBED_COLOR)
+            embed = create_embed(title="Wybierz item", color=EMBED_COLOR)
             embed.set_image(url="attachment://koszyk.png")
             file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
             await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, files=[file])
@@ -947,7 +948,7 @@ class MyClient(discord.Client):
                         if user_obj:
                             await send_achievement_message(user_obj, code)
                 if lines:
-                    embed = discord.Embed(
+                    embed = create_embed(
                         title="TOP 3 dropy tygodnia",
                         description="\n".join(lines),
                         color=discord.Color.purple(),
@@ -971,7 +972,7 @@ class MyClient(discord.Client):
                     ev.get("start", 0) <= now <= ev.get("end", 0)
                     and not ev.get("announced", False)
                 ):
-                    embed = discord.Embed(
+                    embed = create_embed(
                         title="Nowy event!",
                         color=discord.Color.orange(),
                     )
@@ -1038,7 +1039,7 @@ class CollectionMainView(View):
 
         top5 = sorted(card_values, key=lambda x: x[1], reverse=True)[:5]
 
-        embed = discord.Embed(
+        embed = create_embed(
             title="Twoja kolekcja Pokémon",
             description=(
                 f"Masz **{total_cards} kart** (*{unique_cards} unikalnych*)\n"
@@ -1142,7 +1143,7 @@ class CollectionMainView(View):
                 return
 
             lines = [f"• {c['name']}" for c in cards[:25]]
-            embed = discord.Embed(
+            embed = create_embed(
                 title="Twoje karty z zestawu",
                 description="\n".join(lines),
                 color=EMBED_COLOR
@@ -1210,7 +1211,7 @@ class CollectionMainView(View):
                     await interaction.response.edit_message(embed=embed, view=view, attachments=[file])
 
             view = SetDropdownView(self.user, sets, options)
-            embed = discord.Embed(
+            embed = create_embed(
                 title="Twoje sety",
                 description="Wybierz set z listy poniżej",
                 color=EMBED_COLOR,
@@ -1275,7 +1276,7 @@ async def build_set_embed(user, sets, set_id):
         [(c["id"], c["name"], c["price_usd"], c["img_url"]) for c in user_cards],
         key=lambda x: x[2], reverse=True
     )[:5]
-    embed = discord.Embed(
+    embed = create_embed(
         title=f"{set_obj['name']} ({set_obj['ptcgoCode']})",
         description=(
             f"Masz {owned}/{total_cards} kart ({percent:.1f}%)\n"
@@ -1320,7 +1321,7 @@ class CardRevealView(View):
         rarity = card.get("rarity", "Unknown")
         emoji = RARITY_EMOJIS.get(rarity, "❔")
         rarity_colors = RARITY_COLORS
-        embed = discord.Embed(
+        embed = create_embed(
             title=f"{self.index + 1}. {card['name']}",
             description=f"{emoji} Rzadkość: **{rarity}**",
             color=rarity_colors.get(rarity, 0xFFFFFF)
@@ -1489,7 +1490,7 @@ class CardRevealView(View):
                                 break
                     price_bc = usd_to_bc(price or 0)
                     if drop_channel and rarity in RAREST_TYPES:
-                        embed = discord.Embed(
+                        embed = create_embed(
                             title="🔥 WYJĄTKOWY DROP!",
                             description=(
                                 f"{interaction.user.mention} trafił/a **{card['name']}**\n"
@@ -1633,13 +1634,16 @@ async def start_cmd(interaction: discord.Interaction):
     users[uid]["money_achievements"] += reward
     save_users(users)
     welcome = (
-        "**Witaj w Pok\xe9 Booster Bot!**\n"
         "Zbieraj karty Pok\xe9mon, kupuj boostery w komendzie `/sklep` i odbieraj codzienne monety przy pomocy `/daily`.\n"
         "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj kolekcj\u0119 przez `/kolekcja`.\n"
         "Po wi\u0119cej informacji u\x17yj `/help`.\n\n"
         f"✅ Utworzono konto! Otrzymujesz {START_MONEY} BC {COIN_EMOJI}"
     )
-    embed = discord.Embed(description=welcome, color=discord.Color.green())
+    embed = create_embed(
+        title="Witaj w Pok\xe9 Booster Bot!",
+        description=welcome,
+        color=discord.Color.green()
+    )
     embed.set_image(url="attachment://CardCollector.png")
     file = discord.File(GRAPHIC_DIR / "CardCollector.png", filename="CardCollector.png")
     await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
@@ -1736,7 +1740,7 @@ async def saldo(interaction: discord.Interaction):
     sales = user.get("money_sales", 0)
     events = user.get("money_events", 0)
     ach = user.get("money_achievements", 0)
-    embed = discord.Embed(title="Twoje saldo", color=discord.Color.green())
+    embed = create_embed(title="Twoje saldo", color=discord.Color.green())
     embed.add_field(name="Łącznie", value=f"{money} BC {COIN_EMOJI}", inline=False)
     embed.add_field(name="Sprzedaż kart", value=f"{sales} BC {COIN_EMOJI}", inline=False)
     embed.add_field(name="Eventy", value=f"{events} BC {COIN_EMOJI}", inline=False)
@@ -1855,7 +1859,7 @@ async def ranking_cmd(interaction: discord.Interaction):
     ]
     if not lines:
         lines = ["Brak danych"]
-    embed = discord.Embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
+    embed = create_embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
     await interaction.response.send_message(embed=embed, ephemeral=True)
     changed = False
     notify = []
@@ -1890,7 +1894,7 @@ async def help_cmd(interaction: discord.Interaction):
         ("/ranking", "Najlepsze dropy tygodnia"),
     ]
     desc = "\n".join(f"**{cmd}** — {txt}" for cmd, txt in commands)
-    embed = discord.Embed(title="Dostępne komendy", description=desc, color=EMBED_COLOR)
+    embed = create_embed(title="Dostępne komendy", description=desc, color=EMBED_COLOR)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- KOMENDA GIVEAWAY ---

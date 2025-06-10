@@ -1,6 +1,7 @@
 import json
 import time
 from pathlib import Path
+import discord
 
 BASE_DIR = Path(__file__).resolve().parent
 USERS_FILE = BASE_DIR / "users.json"
@@ -8,6 +9,15 @@ SETS_FILE = BASE_DIR / "sets.json"
 PRICE_FILE = BASE_DIR / "price.json"
 DATA_FILE = BASE_DIR / "data.json"
 EVENTS_FILE = BASE_DIR / "events.json"
+
+# Default color for embeds used across the bot
+EMBED_COLOR = discord.Color.dark_teal()
+
+def create_embed(title: str, description: str | None = None, *, color: discord.Color | None = None) -> discord.Embed:
+    """Return a consistently styled embed."""
+    if color is None:
+        color = EMBED_COLOR
+    return discord.Embed(title=title, description=description, color=color)
 
 def load_users():
     try:

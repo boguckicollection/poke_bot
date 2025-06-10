@@ -3,12 +3,11 @@ import random
 import asyncio
 from datetime import datetime, timezone, timedelta
 from discord.ui import Modal, View, TextInput, Button
-from poke_utils import load_users, save_users, get_all_sets
+from poke_utils import load_users, save_users, get_all_sets, EMBED_COLOR, create_embed
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 GRAPHIC_DIR = BASE_DIR / "graphic"
-EMBED_COLOR = discord.Color.dark_teal()
 
 def parse_time_string(s: str) -> int:
     units = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
@@ -47,15 +46,16 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
 
         file = discord.File(GRAPHIC_DIR / "giveawey.png", filename="giveawey.png")
 
-        embed = discord.Embed(
+        embed = create_embed(
+            title="Giveaway",
             description=(
                 f"🎴 Nagroda: {liczba}x **{set_name}** booster\n"
                 f"👑 Zwycięzcy: {zwyciezcy}\n"
                 f"⏳ Zakończenie za: {self.czas.value}"
             ),
             color=EMBED_COLOR,
-            timestamp=datetime.now(timezone.utc) + timedelta(seconds=czas_s)
         )
+        embed.timestamp = datetime.now(timezone.utc) + timedelta(seconds=czas_s)
         if logo_url:
             embed.set_thumbnail(url=logo_url)
         embed.set_image(url="attachment://giveawey.png")
