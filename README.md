@@ -17,6 +17,7 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 - **Osiągnięcia i ranking tygodniowy** – zdobywaj odznaki za master sety,
   30‑dniowy streak i najlepszy drop tygodnia.
 - **Giveaway** – administratorzy mogą tworzyć losowania boosterów.
+- **Eventy** – czasowe bonusy jak podwójne monety lub zwiększona szansa na drop.
 
 ## Instalacja
 
