@@ -1876,7 +1876,7 @@ async def ranking_cmd(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
     changed = False
     notify = []
-    for uid,_ in top3:
+    for uid, _, _ in top3:
         ensure_user_fields(users[uid])
         if grant_achievement(users[uid], "top3_week"):
             notify.append(uid)
