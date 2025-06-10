@@ -33,6 +33,31 @@ BASE_DIR = Path(__file__).resolve().parent
 GRAPHIC_DIR = BASE_DIR / "graphic"
 CARD_CACHE_FILE = BASE_DIR / "card_cache.json"
 
+# Emoji i kolory rzadkości kart
+RARITY_EMOJIS = {
+    "Common": "⚪",
+    "Uncommon": "🟢",
+    "Rare": "⭐",
+    "Double Rare": "💎",
+    "Ultra Rare": "✨",
+    "Hyper Rare": "🌈",
+    "Illustration Rare": "🖼️",
+    "Special Illustration Rare": "🏆",
+}
+
+RARITY_COLORS = {
+    "Common": 0xAAAAAA,
+    "Uncommon": 0x1E90FF,
+    "Rare": 0xFFD700,
+    "Double Rare": 0xFF8C00,
+    "Ultra Rare": 0xFF1493,
+    "Hyper Rare": 0x9400D3,
+    "Illustration Rare": 0x00CED1,
+    "Special Illustration Rare": 0xFF0000,
+}
+
+GOD_PACK_CHANCE = 0.005
+
 def load_card_cache():
     global CARD_CACHE
     try:
@@ -267,8 +292,12 @@ def grant_achievement(user: dict, code: str) -> bool:
     user["achievements"].append(code)
     if code in BADGE_INFO and code not in user.setdefault("badges", []):
         user["badges"].append(code)
-    reward = ACHIEVEMENT_REWARDS.get(code, ACHIEVEMENT_REWARDS.get("master", 0) if code.startswith("master:") else 0)
+    reward = ACHIEVEMENT_REWARDS.get(
+        code,
+        ACHIEVEMENT_REWARDS.get("master", 0) if code.startswith("master:") else 0,
+    )
     user["money"] = user.get("money", 0) + reward
+    user["money_achievements"] = user.get("money_achievements", 0) + reward
     return True
 
 
@@ -848,6 +877,7 @@ class MyClient(discord.Client):
                 for idx, (uid, price, name) in enumerate(top3):
                     reward = (3 - idx) * 50
                     users[uid]["money"] = users[uid].get("money", 0) + reward
+                    users[uid]["money_events"] = users[uid].get("money_events", 0) + reward
                     bc = usd_to_bc(price)
                     lines.append(f"{idx+1}. <@{uid}> - {name} ({bc} BC {COIN_EMOJI})")
                     new_codes = []
@@ -998,6 +1028,9 @@ class CollectionMainView(View):
             embed.add_field(name="Rare Boosty do użycia", value=f"{boost_count} szt.", inline=False)
         money = user.get("money", 0)
         embed.add_field(name="💰 Saldo", value=f"{money} BC {COIN_EMOJI}", inline=False)
+        icons = [BADGE_INFO[a]["emoji"] for a in user.get("achievements", []) if a in BADGE_INFO]
+        if icons:
+            embed.add_field(name="Zdobyte osiągnięcia", value=" ".join(icons), inline=False)
         return embed
     
     class ViewCardsButton(Button):
@@ -1191,9 +1224,8 @@ class CardRevealView(View):
     async def show_card(self, interaction, first=False):
         card = self.cards[self.index]
         rarity = card.get("rarity", "Unknown")
-        rarity_colors = {"Common": 0xAAAAAA, "Uncommon": 0x1E90FF, "Rare": 0xFFD700}
-        rarity_emojis = {"Common": "⚪", "Uncommon": "🔵", "Rare": "⭐"}
-        emoji = rarity_emojis.get(rarity, "❔")
+        emoji = RARITY_EMOJIS.get(rarity, "❔")
+        rarity_colors = RARITY_COLORS
         embed = discord.Embed(
             title=f"{self.index + 1}. {card['name']}",
             description=f"{emoji} Rzadkość: **{rarity}**",
@@ -1259,7 +1291,7 @@ class CardRevealView(View):
                 summary_lines = []
                 duplicate_cards = []
                 duplicate_usd = 0.0
-                rarity_emojis = {"Common": "⚪", "Uncommon": "🔵", "Rare": "⭐"}
+                rarity_emojis = RARITY_EMOJIS
                 for card in self.parent.cards:
                     price = None
                     if "tcgplayer" in card and "prices" in card["tcgplayer"]:
@@ -1428,6 +1460,7 @@ class CardRevealView(View):
                                 remaining.append(c)
                         user["cards"] = remaining
                         user["money"] = user.get("money", 0) + total
+                        user["money_sales"] = user.get("money_sales", 0) + total
                         save_users(users)
                         button.disabled = True
                         await i.response.edit_message(view=self)
@@ -1493,6 +1526,9 @@ async def start_cmd(interaction: discord.Interaction):
         "streak_freeze": 0,
         "boosters_opened": 0,
         "money": START_MONEY,
+        "money_sales": 0,
+        "money_events": START_MONEY,
+        "money_achievements": 0,
         "last_daily": 0,
         "daily_streak": 0,
         "weekly_best": {"week": 0, "year": 0, "price": 0},
@@ -1501,7 +1537,9 @@ async def start_cmd(interaction: discord.Interaction):
         "created_at": int(datetime.datetime.now(datetime.UTC).timestamp()),
     }
     users[uid]["achievements"].append("account_created")
-    users[uid]["money"] += ACHIEVEMENT_REWARDS.get("account_created", 0)
+    reward = ACHIEVEMENT_REWARDS.get("account_created", 0)
+    users[uid]["money"] += reward
+    users[uid]["money_achievements"] += reward
     save_users(users)
     welcome = (
         "**Witaj w Pok\xe9 Booster Bot!**\n"
@@ -1599,10 +1637,17 @@ async def saldo(interaction: discord.Interaction):
     if uid not in users:
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
-    money = users[uid].get("money", 0)
-    await interaction.response.send_message(
-        f"💰 Twoje saldo: {money} BC {COIN_EMOJI}", ephemeral=True
-    )
+    user = users[uid]
+    money = user.get("money", 0)
+    sales = user.get("money_sales", 0)
+    events = user.get("money_events", 0)
+    ach = user.get("money_achievements", 0)
+    embed = discord.Embed(title="Twoje saldo", color=discord.Color.green())
+    embed.add_field(name="Łącznie", value=f"{money} BC {COIN_EMOJI}", inline=False)
+    embed.add_field(name="Sprzedaż kart", value=f"{sales} BC {COIN_EMOJI}", inline=False)
+    embed.add_field(name="Eventy", value=f"{events} BC {COIN_EMOJI}", inline=False)
+    embed.add_field(name="Osiągnięcia", value=f"{ach} BC {COIN_EMOJI}", inline=False)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- KOMENDA DAILY ---
 @client.tree.command(name="daily", description="Odbierz dzienną nagrodę monet")
@@ -1648,6 +1693,7 @@ async def daily(interaction: discord.Interaction):
         bonus = STREAK_BONUS * (streak // 7)
     total_gain = amount + bonus
     users[uid]["money"] = users[uid].get("money", 0) + total_gain
+    users[uid]["money_events"] = users[uid].get("money_events", 0) + total_gain
     users[uid]["last_daily"] = now
     if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
         new_codes.append("all_achievements")
@@ -1880,6 +1926,22 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
                     save_card_cache()
             found = set_cache.get(rarity, [])
             return random.sample(found, min(count, len(found)))
+
+        if random.random() < GOD_PACK_CHANCE:
+            rare_pool = [
+                "Hyper Rare",
+                "Special Illustration Rare",
+                "Illustration Rare",
+                "Ultra Rare",
+                "Double Rare",
+            ]
+            for _ in range(10):
+                for r in rare_pool:
+                    card = await get_cards_by_rarity(r, 1)
+                    if card:
+                        result += card
+                        break
+            return result[:10]
 
         result += await get_cards_by_rarity("Common", 4)
         result += await get_cards_by_rarity("Uncommon", 3)
