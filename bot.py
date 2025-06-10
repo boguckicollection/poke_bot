@@ -47,9 +47,26 @@ def save_card_cache():
 
 EMBED_COLOR = discord.Color.dark_teal()
 
+# Opisy osiągnięć
+ACHIEVEMENTS_INFO = {
+    "account_created": "Założenie konta",
+    "daily_10": "10-dniowy streak daily",
+    "daily_30": "30-dniowy streak daily",
+    "top3_week": "TOP 3 drop tygodnia",
+    "first_booster": "Pierwszy otwarty booster",
+    "open_10_boosters": "Otwórz 10 boosterów",
+}
+
 def usd_to_bc(usd: float) -> int:
     """Przelicz dolary na BoguckiCoiny."""
     return int(usd * COINS_PER_USD) if usd else 0
+
+def achievement_description(code: str, all_sets) -> str:
+    if code.startswith("master:"):
+        sid = code.split(":", 1)[1]
+        name = next((s["name"] for s in all_sets if s["id"] == sid), sid)
+        return f"🏆 Master set {name}"
+    return f"🏅 {ACHIEVEMENTS_INFO.get(code, code)}"
 
 # --- parametry ekonomii ---
 START_MONEY = 100
@@ -990,6 +1007,12 @@ class CardRevealView(View):
                 update_weekly_best(users[uid], max_price, max_name)
                 all_sets = get_all_sets()
                 check_master_set(users[uid], self.parent.set_id, all_sets)
+                users[uid]["boosters_opened"] = users[uid].get("boosters_opened", 0) + 1
+                opened = users[uid]["boosters_opened"]
+                if opened >= 1 and "first_booster" not in users[uid].get("achievements", []):
+                    users[uid].setdefault("achievements", []).append("first_booster")
+                if opened >= 10 and "open_10_boosters" not in users[uid].get("achievements", []):
+                    users[uid].setdefault("achievements", []).append("open_10_boosters")
                 save_users(users)
                 drop_channel = None
                 if hasattr(interaction, "guild") and interaction.guild:
@@ -1067,16 +1090,23 @@ async def start_cmd(interaction: discord.Interaction):
         "rare_boost": 0,
         "double_daily_until": 0,
         "streak_freeze": 0,
+        "boosters_opened": 0,
         "money": START_MONEY,
         "last_daily": 0,
         "daily_streak": 0,
         "weekly_best": {"week": 0, "year": 0, "price": 0},
         "achievements": [],
     }
+    users[uid]["achievements"].append("account_created")
     save_users(users)
-    await interaction.response.send_message(
-        f"✅ Utworzono konto! Otrzymujesz {START_MONEY} BC {COIN_EMOJI}", ephemeral=True
+    welcome = (
+        "**Witaj w Pok\xe9 Booster Bot!**\n"
+        "Zbieraj karty Pok\xe9mon, kupuj boostery w komendzie `/sklep` i odbieraj codzienne monety przy pomocy `/daily`.\n"
+        "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj kolekcj\u0119 przez `/kolekcja`.\n"
+        "Po wi\u0119cej informacji u\x17yj `/help`.\n\n"
+        f"✅ Utworzono konto! Otrzymujesz {START_MONEY} BC {COIN_EMOJI}"
     )
+    await interaction.response.send_message(welcome, ephemeral=True)
     try:
         await interaction.channel.send(
             f"🎉 {interaction.user.mention} dołączył do gry! Witamy!"
@@ -1090,7 +1120,7 @@ async def otworz(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
     users = load_users()
     if user_id not in users or not users[user_id]["boosters"]:
-        await interaction.response.send_message("❌ Nie masz boosterów do otwarcia! Użyj `/kup_booster`.", ephemeral=True)
+        await interaction.response.send_message("❌ Nie masz boosterów do otwarcia! Odwiedź `/sklep`.", ephemeral=True)
         return
     ensure_user_fields(users[user_id])
     all_sets = get_all_sets()
@@ -1200,6 +1230,8 @@ async def daily(interaction: discord.Interaction):
         else:
             streak = 1
     users[uid]["daily_streak"] = streak
+    if streak >= 10 and "daily_10" not in users[uid].get("achievements", []):
+        users[uid].setdefault("achievements", []).append("daily_10")
     if streak >= 30 and "daily_30" not in users[uid].get("achievements", []):
         users[uid].setdefault("achievements", []).append("daily_30")
     amount = DAILY_AMOUNT
@@ -1213,38 +1245,12 @@ async def daily(interaction: discord.Interaction):
     users[uid]["last_daily"] = now
     save_users(users)
     emj = random.choice(FUN_EMOJIS)
-    await interaction.response.send_message(
-        f"{emj} Otrzymujesz {amount} BC {COIN_EMOJI}!" + (f" 🎊 Premia {bonus} BC" if bonus else ""),
-        ephemeral=True,
-    )
+    day = (streak - 1) % 7 + 1
+    msg = f"{emj} Otrzymujesz {amount} BC {COIN_EMOJI}! (dzień {day}/7)"
+    if bonus:
+        msg += f" 🎊 Premia {bonus} BC"
+    await interaction.response.send_message(msg, ephemeral=True)
 
-# --- KOMENDA KUP BOOSTER ---
-@client.tree.command(name="kup_booster", description="Kup booster za monety")
-@app_commands.describe(kod="Kod PTCGO lub ID zestawu")
-async def kup_booster(interaction: discord.Interaction, kod: str):
-    users = load_users()
-    uid = str(interaction.user.id)
-    if uid not in users:
-        await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
-        return
-    ensure_user_fields(users[uid])
-    sets = get_all_sets()
-    target = next((s for s in sets if s.get("id") == kod.lower() or s.get("ptcgoCode", "").lower() == kod.lower()), None)
-    if not target:
-        await interaction.response.send_message("❌ Nie znaleziono takiego zestawu.", ephemeral=True)
-        return
-    price = booster_price_coins(target["id"])
-    if users[uid].get("money", 0) < price:
-        await interaction.response.send_message(
-            "❌ Nie masz wystarczającej liczby BC!", ephemeral=True
-        )
-        return
-    users[uid]["money"] -= price
-    users[uid]["boosters"].append(target["id"])
-    save_users(users)
-    await interaction.response.send_message(
-        f"✅ Kupiono booster {target['name']} za {price} BC {COIN_EMOJI}", ephemeral=True
-    )
 
 # --- KOMENDA SKLEP ---
 @client.tree.command(name="sklep", description="Wyświetl sklep i zarządzaj koszykiem")
@@ -1273,16 +1279,7 @@ async def achievements_cmd(interaction: discord.Interaction):
     ensure_user_fields(users[uid])
     ach = users[uid].get("achievements", [])
     all_sets = get_all_sets()
-    lines = []
-    for a in ach:
-        if a.startswith("master:"):
-            sid = a.split(":",1)[1]
-            name = next((s['name'] for s in all_sets if s['id']==sid), sid)
-            lines.append(f"🏆 Master set {name}")
-        elif a == "daily_30":
-            lines.append("⏰ 30-dniowy streak daily")
-        elif a == "top3_week":
-            lines.append("🥇 TOP 3 drop tygodnia")
+    lines = [achievement_description(a, all_sets) for a in ach]
     desc = "\n".join(lines) if lines else "Brak osiągnięć"
     embed = discord.Embed(title="Twoje osiągnięcia", description=desc, color=discord.Color.green())
     await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -1315,6 +1312,23 @@ async def ranking_cmd(interaction: discord.Interaction):
             changed = True
     if changed:
         save_users(users)
+
+# --- KOMENDA HELP ---
+@client.tree.command(name="help", description="Lista komend bota")
+async def help_cmd(interaction: discord.Interaction):
+    commands = [
+        ("/start", "Załóż konto i odbierz startowe monety"),
+        ("/saldo", "Sprawdź ilość posiadanych monet"),
+        ("/daily", "Codzienna nagroda pieniędzy"),
+        ("/sklep", "Przeglądaj sklep z boosterami"),
+        ("/kolekcja", "Twoja kolekcja kart"),
+        ("/otworz", "Otwórz posiadane boostery"),
+        ("/osiagniecia", "Lista zdobytych osiągnięć"),
+        ("/ranking", "Najlepsze dropy tygodnia"),
+    ]
+    desc = "\n".join(f"**{cmd}** — {txt}" for cmd, txt in commands)
+    embed = discord.Embed(title="Dostępne komendy", description=desc, color=EMBED_COLOR)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- KOMENDA GIVEAWAY ---
 @client.tree.command(name="giveaway", description="Utwórz nowe losowanie boosterów")
