@@ -210,7 +210,7 @@ async def send_achievement_message(interaction_or_user, code: str):
     class GoAchievementsView(View):
         @discord.ui.button(label="Otwórz osiągnięcia", style=discord.ButtonStyle.primary)
         async def show(self, i: discord.Interaction, _):
-            await achievements_cmd(i)
+            await achievements_cmd.callback(i)
 
     if isinstance(interaction_or_user, discord.Interaction):
         await interaction_or_user.followup.send(embed=embed, view=GoAchievementsView(), ephemeral=True)
