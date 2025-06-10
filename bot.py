@@ -1373,7 +1373,7 @@ class CardRevealView(View):
                         embed = await view.build_summary_embed()
                         file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
                         await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
-                await interaction.response.edit_message(
+                await interaction.edit_original_response(
                     content=(
                         f"{random.choice(FUN_EMOJIS)} Koniec boostera! Oto Twoje karty:\n"
                         f"```{summary}```\n"
