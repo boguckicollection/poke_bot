@@ -33,6 +33,7 @@ def ensure_user_fields(user):
     user.setdefault("rare_boost", 0)
     user.setdefault("double_daily_until", 0)
     user.setdefault("streak_freeze", 0)
+    user.setdefault("boosters_opened", 0)
     user.setdefault("money", 0)
     user.setdefault("last_daily", 0)
     user.setdefault("daily_streak", 0)

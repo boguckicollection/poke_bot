@@ -43,10 +43,10 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 - `/saldo` – sprawdź aktualną ilość posiadanych monet.
 - `/daily` – codzienna nagroda pieniędzy (24 h cooldown). Co 7 dni serii otrzymasz bonus 200 BC.
 - `/sklep` – otwiera widok sklepu z boosterami i przedmiotami.
-- `/kup_booster <kod>` – szybki zakup jednego boostera podając kod zestawu.
 - `/kolekcja` – wyświetla Twoją kolekcję kart i boosterów.
 - `/osiagniecia` – lista zdobytych osiągnięć.
 - `/ranking` – najlepsze dropy tygodnia.
+- `/help` – lista wszystkich komend bota.
 - `/otworz` – otwórz posiadane boostery i odsłaniaj karty jedna po drugiej.
 - `/giveaway` – stwórz losowanie boosterów (administrator).
 
