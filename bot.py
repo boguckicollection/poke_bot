@@ -1856,22 +1856,53 @@ async def giveaway_command(interaction: discord.Interaction):
     await interaction.response.send_modal(GiveawayModal())
 
 # --- KOMENDA EVENT ---
+class EventModal(Modal, title="🗓️ Nowy Event"):
+    def __init__(self, event_type: str):
+        super().__init__()
+        self.event_type = event_type
+        self.start = TextInput(label="Start (YYYY-MM-DD HH:MM)", placeholder="2024-01-01 10:00")
+        self.end = TextInput(label="Koniec (YYYY-MM-DD HH:MM)", placeholder="2024-01-02 10:00")
+        self.add_item(self.start)
+        self.add_item(self.end)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("🚫 Tylko administrator może tworzyć event!", ephemeral=True)
+            return
+        try:
+            st = datetime.datetime.strptime(self.start.value, "%Y-%m-%d %H:%M").replace(tzinfo=datetime.timezone.utc).timestamp()
+            et = datetime.datetime.strptime(self.end.value, "%Y-%m-%d %H:%M").replace(tzinfo=datetime.timezone.utc).timestamp()
+        except Exception:
+            await interaction.response.send_message("❌ Niepoprawny format daty.", ephemeral=True)
+            return
+        events = load_events()
+        events.append({"start": st, "end": et, "type": self.event_type})
+        save_events(events)
+        await interaction.response.send_message("✅ Event utworzony!", ephemeral=True)
+
+
+class EventTypeView(View):
+    def __init__(self):
+        super().__init__(timeout=60)
+
+    @select(
+        placeholder="Wybierz typ eventu",
+        options=[
+            discord.SelectOption(label="Podwójne monety", value="coins"),
+            discord.SelectOption(label="Lepszy drop", value="drop"),
+        ],
+    )
+    async def select_type(self, interaction: discord.Interaction, menu: discord.ui.Select):
+        event_type = menu.values[0]
+        await interaction.response.send_modal(EventModal(event_type))
+
+
 @client.tree.command(name="event", description="Utwórz nowy event")
-@app_commands.describe(start="Start YYYY-MM-DD HH:MM", end="Koniec YYYY-MM-DD HH:MM", typ="Typ: coins/drop")
-async def event_command(interaction: discord.Interaction, start: str, end: str, typ: str):
+async def event_command(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message("🚫 Tylko administrator może tworzyć event!", ephemeral=True)
         return
-    try:
-        st = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M").replace(tzinfo=datetime.timezone.utc).timestamp()
-        et = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M").replace(tzinfo=datetime.timezone.utc).timestamp()
-    except Exception:
-        await interaction.response.send_message("❌ Niepoprawny format daty.", ephemeral=True)
-        return
-    events = load_events()
-    events.append({"start": st, "end": et, "type": typ})
-    save_events(events)
-    await interaction.response.send_message("✅ Event utworzony!", ephemeral=True)
+    await interaction.response.send_message("Wybierz typ eventu:", view=EventTypeView(), ephemeral=True)
 
 # --- Integracja StartIT booster + boost ---
 @client.event
