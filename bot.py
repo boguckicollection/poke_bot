@@ -24,6 +24,7 @@ import asyncio
 import re
 from dotenv import load_dotenv
 import datetime
+import time
 
 # Ile BoguckiCoinów odpowiada jednemu dolarowi
 # Przyjęto nieco niższy przelicznik, aby zbilansować
@@ -325,6 +326,7 @@ def build_achievement_pages(user, all_sets):
     pages = []
     for title, entries in ACHIEVEMENT_GROUPS:
         embed = discord.Embed(title=title, color=discord.Color.green())
+        embed.set_image(url="attachment://achivment.png")
         for code, target in entries:
             value = 0
             tgt = target
@@ -883,6 +885,7 @@ class MyClient(discord.Client):
             await prefetch_cards_for_sets([s["id"] for s in get_all_sets()])
         self.loop.create_task(self.shop_update_loop())
         self.loop.create_task(self.weekly_ranking_loop())
+        self.loop.create_task(self.event_notification_loop())
         print(f"✅ Zalogowano jako {self.user} (ID: {self.user.id})")
 
     async def shop_update_loop(self):
@@ -952,6 +955,44 @@ class MyClient(discord.Client):
                     save_users(users)
                 processed = (week, year)
             await asyncio.sleep(3600)
+
+    async def event_notification_loop(self):
+        await self.wait_until_ready()
+        while not self.is_closed():
+            now = time.time()
+            events = load_events()
+            changed = False
+            for ev in events:
+                if (
+                    ev.get("start", 0) <= now <= ev.get("end", 0)
+                    and not ev.get("announced", False)
+                ):
+                    embed = discord.Embed(
+                        title="Nowy event!",
+                        color=discord.Color.orange(),
+                    )
+                    if ev.get("type") == "coins":
+                        embed.description = (
+                            "Rozpoczął się event podwójnych monet! "
+                            "Wszystkie nagrody są podwojone."
+                        )
+                    elif ev.get("type") == "drop":
+                        embed.description = (
+                            "Rozpoczął się event lepszego dropu! "
+                            "Masz większą szansę na rzadkie karty."
+                        )
+                    else:
+                        embed.description = f"Typ: {ev.get('type')}"
+                    file = discord.File(GRAPHIC_DIR / "logo.png", filename="logo.png")
+                    embed.set_thumbnail(url="attachment://logo.png")
+                    channel = self.get_channel(DROP_CHANNEL_ID)
+                    if channel:
+                        await channel.send(embed=embed, file=file)
+                    ev["announced"] = True
+                    changed = True
+            if changed:
+                save_events(events)
+            await asyncio.sleep(60)
 
 client = MyClient()
 
@@ -1597,7 +1638,10 @@ async def start_cmd(interaction: discord.Interaction):
         "Po wi\u0119cej informacji u\x17yj `/help`.\n\n"
         f"✅ Utworzono konto! Otrzymujesz {START_MONEY} BC {COIN_EMOJI}"
     )
-    await interaction.response.send_message(welcome, ephemeral=True)
+    embed = discord.Embed(description=welcome, color=discord.Color.green())
+    embed.set_image(url="attachment://CardCollector.png")
+    file = discord.File(GRAPHIC_DIR / "CardCollector.png", filename="CardCollector.png")
+    await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
     await send_achievement_message(interaction, "account_created")
     try:
         await interaction.channel.send(
@@ -1788,7 +1832,8 @@ async def achievements_cmd(interaction: discord.Interaction):
 
     pages = build_achievement_pages(user, all_sets)
     view = AchievementsView(pages, uid)
-    await interaction.response.send_message(embed=pages[0], view=view, ephemeral=True)
+    file = discord.File(GRAPHIC_DIR / "achivment.png", filename="achivment.png")
+    await interaction.response.send_message(embed=pages[0], view=view, ephemeral=True, file=file)
     view.message = await interaction.original_response()
 
 # --- KOMENDA RANKING ---
@@ -1876,7 +1921,7 @@ class EventModal(Modal, title="🗓️ Nowy Event"):
             await interaction.response.send_message("❌ Niepoprawny format daty.", ephemeral=True)
             return
         events = load_events()
-        events.append({"start": st, "end": et, "type": self.event_type})
+        events.append({"start": st, "end": et, "type": self.event_type, "announced": False})
         save_events(events)
         await interaction.response.send_message("✅ Event utworzony!", ephemeral=True)
 
