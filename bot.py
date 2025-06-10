@@ -45,6 +45,34 @@ def save_card_cache():
     with open(CARD_CACHE_FILE, "w") as f:
         json.dump(CARD_CACHE, f)
 
+
+async def fetch_all_cards_for_set(session: aiohttp.ClientSession, set_id: str):
+    cards = []
+    page = 1
+    while True:
+        url = f"https://api.pokemontcg.io/v2/cards?q=set.id:{set_id}&page={page}&pageSize=250"
+        async with session.get(url) as resp:
+            data = await resp.json()
+            cards.extend(data.get("data", []))
+            if len(cards) >= data.get("totalCount", len(cards)):
+                break
+            page += 1
+    rarity_dict = {}
+    for card in cards:
+        rarity = card.get("rarity", "Unknown")
+        rarity_dict.setdefault(rarity, []).append(card)
+    CARD_CACHE[set_id] = rarity_dict
+
+
+async def prefetch_cards_for_sets(set_ids):
+    if not set_ids:
+        return
+    headers = {"X-Api-Key": POKETCG_API_KEY}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        for sid in set_ids:
+            await fetch_all_cards_for_set(session, sid)
+    save_card_cache()
+
 EMBED_COLOR = discord.Color.dark_teal()
 
 # Opisy osiągnięć
@@ -758,6 +786,8 @@ class MyClient(discord.Client):
             await self.tree.sync()
             self._synced = True
         await fetch_and_save_sets()
+        if not CARD_CACHE:
+            await prefetch_cards_for_sets([s["id"] for s in get_all_sets()])
         self.loop.create_task(self.shop_update_loop())
         self.loop.create_task(self.weekly_ranking_loop())
         print(f"✅ Zalogowano jako {self.user} (ID: {self.user.id})")
@@ -765,13 +795,18 @@ class MyClient(discord.Client):
     async def shop_update_loop(self):
         await self.wait_until_ready()
         while not self.is_closed():
+            now = datetime.datetime.now(datetime.UTC)
+            target = now.replace(hour=20, minute=0, second=0, microsecond=0)
+            if now >= target:
+                target += datetime.timedelta(days=1)
+            await asyncio.sleep((target - now).total_seconds())
             new_sets = await fetch_and_save_sets()
             if new_sets:
                 channel = self.get_channel(SHOP_CHANNEL_ID)
                 if channel:
                     names = ", ".join(s["name"] for s in new_sets)
                     await channel.send(f"🆕 Nowe sety w sklepie: {names}")
-            await asyncio.sleep(24 * 3600)
+                await prefetch_cards_for_sets([s["id"] for s in new_sets])
 
     async def weekly_ranking_loop(self):
         await self.wait_until_ready()
@@ -1179,40 +1214,6 @@ class CardRevealView(View):
         else:
             await interaction.response.edit_message(embed=embed, view=self, attachments=[])
 
-
-class AchievementsView(View):
-    def __init__(self, embeds, user_id):
-        super().__init__(timeout=120)
-        self.embeds = embeds
-        self.index = 0
-        self.user_id = str(user_id)
-        if len(embeds) > 1:
-            self.add_item(self.PrevButton(self))
-            self.add_item(self.NextButton(self))
-
-    async def interaction_check(self, interaction: discord.Interaction):
-        return str(interaction.user.id) == self.user_id
-
-    class PrevButton(Button):
-        def __init__(self, parent):
-            super().__init__(label="⬅️", style=discord.ButtonStyle.secondary)
-            self.parent = parent
-
-        async def callback(self, interaction: discord.Interaction):
-            if self.parent.index > 0:
-                self.parent.index -= 1
-            await interaction.response.edit_message(embed=self.parent.embeds[self.parent.index], view=self.parent)
-
-    class NextButton(Button):
-        def __init__(self, parent):
-            super().__init__(label="➡️", style=discord.ButtonStyle.secondary)
-            self.parent = parent
-
-        async def callback(self, interaction: discord.Interaction):
-            if self.parent.index < len(self.parent.embeds) - 1:
-                self.parent.index += 1
-            await interaction.response.edit_message(embed=self.parent.embeds[self.parent.index], view=self.parent)
-
     class NextCardButton(Button):
         def __init__(self, parent):
             super().__init__(label="➡️ Następna karta", style=discord.ButtonStyle.primary)
@@ -1336,11 +1337,11 @@ class AchievementsView(View):
                             title="🔥 WYJĄTKOWY DROP!",
                             description=(
                                 f"{interaction.user.mention} trafił/a **{card['name']}**\n"
-                                f"`{card.get('set', {}).get('ptcgoCode', '-')}` | #{card.get('number', '-')}\n"
+                                f"`{card.get('set', {}).get('ptcgoCode', '-')}` | #{card.get('number', '-') }\n"
                                 f"Rzadkość: {card.get('rarity', 'Unknown')}\n"
                                 f"Wartość: **{price_bc} BC {COIN_EMOJI}**"
                             ),
-                            color=discord.Color.gold()
+                            color=discord.Color.gold(),
                         )
                         if "images" in card and "large" in card["images"]:
                             embed.set_image(url=card["images"]["large"])
@@ -1377,8 +1378,43 @@ class AchievementsView(View):
                         f"```{summary}```\n"
                         f"{podsumowanie}"
                     ),
-                    embed=None, view=AfterBoosterView()
+                    embed=None,
+                    view=AfterBoosterView(),
                 )
+
+
+class AchievementsView(View):
+    def __init__(self, embeds, user_id):
+        super().__init__(timeout=120)
+        self.embeds = embeds
+        self.index = 0
+        self.user_id = str(user_id)
+        if len(embeds) > 1:
+            self.add_item(self.PrevButton(self))
+            self.add_item(self.NextButton(self))
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return str(interaction.user.id) == self.user_id
+
+    class PrevButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="⬅️", style=discord.ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            if self.parent.index > 0:
+                self.parent.index -= 1
+            await interaction.response.edit_message(embed=self.parent.embeds[self.parent.index], view=self.parent)
+
+    class NextButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="➡️", style=discord.ButtonStyle.secondary)
+            self.parent = parent
+
+        async def callback(self, interaction: discord.Interaction):
+            if self.parent.index < len(self.parent.embeds) - 1:
+                self.parent.index += 1
+            await interaction.response.edit_message(embed=self.parent.embeds[self.parent.index], view=self.parent)
 
 # --- KOMENDA START ---
 @client.tree.command(name="start", description="Utwórz konto w grze")
