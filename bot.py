@@ -1240,6 +1240,11 @@ class CardRevealView(View):
                 ensure_user_fields(users[uid])
                 max_price = 0
                 max_name = ""
+                existing = Counter(c["id"] for c in users[uid]["cards"])
+                summary_lines = []
+                duplicate_cards = []
+                duplicate_usd = 0.0
+                rarity_emojis = {"Common": "⚪", "Uncommon": "🔵", "Rare": "⭐"}
                 for card in self.parent.cards:
                     price = None
                     if "tcgplayer" in card and "prices" in card["tcgplayer"]:
@@ -1257,9 +1262,21 @@ class CardRevealView(View):
                         "img_url": img_url,
                         "rarity": card.get("rarity", "")
                     })
+                    rarity = card.get("rarity", "Unknown")
+                    emoji = rarity_emojis.get(rarity, "❔")
+                    line = f"{emoji} {card['name']} ({rarity})"
+                    if existing[card["id"]] > 0:
+                        line += " ♻️"
+                        duplicate_cards.append({"id": card["id"], "price_usd": price or 0})
+                        if price:
+                            duplicate_usd += price
+                    summary_lines.append(line)
+                    existing[card["id"]] += 1
                     if price and price > max_price:
                         max_price = price
                         max_name = card["name"]
+                duplicate_bc = usd_to_bc(duplicate_usd)
+                self.parent.summaries = summary_lines
                 update_weekly_best(users[uid], max_price, max_name)
                 all_sets = get_all_sets()
                 if check_master_set(users[uid], self.parent.set_id, all_sets):
@@ -1360,9 +1377,16 @@ class CardRevealView(View):
                         total_usd += price
                 total_bc = usd_to_bc(total_usd)
                 podsumowanie = (
-                    f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({total_bc} BC {COIN_EMOJI})"
+                    f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({total_bc} BC {COIN_EMOJI})\n"
+                    f"♻️ **Wartość duplikatów:** {duplicate_bc} BC {COIN_EMOJI}"
                 )
                 class AfterBoosterView(View):
+                    def __init__(self, duplicates):
+                        super().__init__(timeout=120)
+                        self.duplicates = duplicates
+                        if not self.duplicates:
+                            self.sell_duplicates.disabled = True
+
                     @discord.ui.button(label="Przejdź do kolekcji", style=discord.ButtonStyle.primary)
                     async def to_collection(self, i: discord.Interaction, button: Button):
                         users = load_users()
@@ -1373,6 +1397,26 @@ class CardRevealView(View):
                         embed = await view.build_summary_embed()
                         file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
                         await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
+
+                    @discord.ui.button(label="Sprzedaj duplikaty", style=discord.ButtonStyle.danger)
+                    async def sell_duplicates(self, i: discord.Interaction, button: Button):
+                        users = load_users()
+                        user = users[str(i.user.id)]
+                        total = 0
+                        remaining = []
+                        counts = Counter(d["id"] for d in self.duplicates)
+                        for c in user["cards"]:
+                            if counts.get(c["id"], 0) > 0:
+                                counts[c["id"]] -= 1
+                                total += usd_to_bc(c.get("price_usd", 0))
+                            else:
+                                remaining.append(c)
+                        user["cards"] = remaining
+                        user["money"] = user.get("money", 0) + total
+                        save_users(users)
+                        button.disabled = True
+                        await i.response.edit_message(view=self)
+                        await i.followup.send(f"Sprzedano duplikaty za {total} BC {COIN_EMOJI}", ephemeral=True)
                 await interaction.edit_original_response(
                     content=(
                         f"{random.choice(FUN_EMOJIS)} Koniec boostera! Oto Twoje karty:\n"
@@ -1380,7 +1424,7 @@ class CardRevealView(View):
                         f"{podsumowanie}"
                     ),
                     embed=None,
-                    view=AfterBoosterView(),
+                    view=AfterBoosterView(duplicate_cards),
                 )
 
 
