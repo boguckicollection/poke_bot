@@ -1569,14 +1569,14 @@ class CardRevealView(View):
             self.parent.index += 1
             await self.parent.show_card(interaction, first=False)
 
-class SummaryButton(Button):
-    def __init__(self, parent):
-        super().__init__(label="Podsumowanie", style=discord.ButtonStyle.success)
-        self.parent = parent
+    class SummaryButton(Button):
+        def __init__(self, parent):
+            super().__init__(label="Podsumowanie", style=discord.ButtonStyle.success)
+            self.parent = parent
 
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        await self.parent.finalize(interaction)
+        async def callback(self, interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral=True)
+            await self.parent.finalize(interaction)
 
 
 
