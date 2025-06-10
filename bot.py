@@ -240,9 +240,21 @@ ACHIEVEMENT_GROUPS = [
     ),
 ]
 
-def usd_to_bc(usd: float) -> int:
-    """Przelicz dolary na BoguckiCoiny."""
-    return int(usd * COINS_PER_USD) if usd else 0
+def usd_to_bc(usd: float) -> float:
+    """Przelicz dolary na BoguckiCoiny z dokładnością do dwóch miejsc."""
+    return round(usd * COINS_PER_USD, 2) if usd else 0.0
+
+def format_bc(amount: float) -> str:
+    """Sformatuj ilość BoguckiCoinów z emoji."""
+    return f"{amount:.2f} BC {COIN_EMOJI}"
+
+def card_price_usd(card: dict) -> float | None:
+    """Zwróć cenę rynkową karty w USD, jeśli jest znana."""
+    if "tcgplayer" in card and "prices" in card["tcgplayer"]:
+        for ver in card["tcgplayer"]["prices"].values():
+            if "market" in ver and ver["market"]:
+                return ver["market"]
+    return None
 
 def progress_bar(value: int, target: int, length: int = 10) -> str:
     ratio = min(value / target, 1.0)
@@ -270,7 +282,7 @@ async def send_achievement_message(interaction_or_user, code: str):
         title="Nowe osiągnięcie!",
         description=(
             f"Gratulacje! Zdobywasz {emoji}**{name}**\n"
-            f"Nagroda: {reward} BC {COIN_EMOJI}"
+            f"Nagroda: {format_bc(reward)}"
         ),
         color=discord.Color.gold(),
     )
@@ -362,7 +374,7 @@ def build_achievement_pages(user, all_sets):
             if reward:
                 info = BADGE_INFO.get(code)
                 name = f"{info['emoji']} {info['name']}" if info else ACHIEVEMENTS_INFO.get(code, code)
-                rewards.append(f"{name}: {reward} BC {COIN_EMOJI}")
+                rewards.append(f"{name}: {format_bc(reward)}")
         if rewards:
             embed.add_field(name="Nagrody", value="\n".join(rewards), inline=False)
         pages.append(embed)
@@ -512,8 +524,8 @@ def build_cart_embed(user_id, message):
     total = compute_cart_total(cart)
     embed = create_embed(title="Koszyk", description=message, color=EMBED_COLOR)
     embed.set_thumbnail(url="attachment://koszyk.png")
-    embed.add_field(name="Wartość koszyka", value=f"{total} BC {COIN_EMOJI}", inline=False)
-    embed.add_field(name="Twoje saldo", value=f"{money} BC {COIN_EMOJI}", inline=False)
+    embed.add_field(name="Wartość koszyka", value=format_bc(total), inline=False)
+    embed.add_field(name="Twoje saldo", value=format_bc(money), inline=False)
     if money < total:
         embed.add_field(name="Brakuje środków", value="Nie masz wystarczającej liczby BC!", inline=False)
     return embed
@@ -593,7 +605,7 @@ def build_shop_embed(user_id):
                 inline=False,
             )
     items_desc = [
-        f"**{info['name']}** - {info['price']} BC {COIN_EMOJI} \u2014 {info['desc']}"
+        f"**{info['name']}** - {format_bc(info['price'])} \u2014 {info['desc']}"
         for info in ITEMS.values()
     ]
     embed.add_field(name="Dostępne itemy", value="\n".join(items_desc) or "Brak", inline=False)
@@ -606,7 +618,7 @@ def build_shop_embed(user_id):
         for iid, q in cart.get("items", {}).items():
             lines.append(f"{ITEMS[iid]['name']} x{q}")
         total = compute_cart_total(cart)
-        lines.append(f"**Razem: {total} BC {COIN_EMOJI}**")
+        lines.append(f"**Razem: {format_bc(total)}**")
         embed.add_field(name="Koszyk", value="\n".join(lines), inline=False)
     return embed
 
@@ -674,7 +686,7 @@ class QuickBonusView(View):
             users[uid]["money"] = users[uid].get("money", 0) + amount
             users[uid]["money_events"] = users[uid].get("money_events", 0) + amount
             save_users(users)
-            msg = f"🎉 Otrzymujesz {amount} BC {COIN_EMOJI}!"
+            msg = f"🎉 Otrzymujesz {format_bc(amount)}!"
         self.claimed = True
         await interaction.response.send_message(msg, ephemeral=True)
         global random_event_active
@@ -740,7 +752,7 @@ class ShopView(View):
         carts.pop(uid, None)
         await self.update()
         emj = random.choice(FUN_EMOJIS)
-        msg = f"{emj} Zakupiono za {total} BC {COIN_EMOJI}"
+        msg = f"{emj} Zakupiono za {format_bc(total)}"
         if mystery_results:
             boosters = ", ".join(mystery_results)
             msg += f"\nWylosowano: {boosters}"
@@ -791,7 +803,7 @@ class ShopView(View):
                                 discord.SelectOption(
                                     label=s['name'],
                                     value=s['id'],
-                                    description=f"{booster_price_coins(s['id'])} BC {COIN_EMOJI}",
+                                    description=format_bc(booster_price_coins(s['id'])),
                                 )
                                 for s in sets_list[:25]
                             ]
@@ -936,7 +948,7 @@ class MyClient(discord.Client):
                     users[uid]["money"] = users[uid].get("money", 0) + reward
                     users[uid]["money_events"] = users[uid].get("money_events", 0) + reward
                     bc = usd_to_bc(price)
-                    lines.append(f"{idx+1}. <@{uid}> - {name} ({bc} BC {COIN_EMOJI})")
+                    lines.append(f"{idx+1}. <@{uid}> - {name} ({format_bc(bc)})")
                     new_codes = []
                     if grant_achievement(users[uid], "top3_week"):
                         new_codes.append("top3_week")
@@ -1073,7 +1085,7 @@ class CollectionMainView(View):
                 name=f"💎 Najcenniejsza karta",
                 value=(
                     f"{card_name} | `{ptcgo_code}` | #{card_number} x{top5[0][2]}\n"
-                    f"**{usd_to_bc(top5[0][1])} BC {COIN_EMOJI}**"
+                    f"**{format_bc(usd_to_bc(top5[0][1]))}**"
                 ),
                 inline=False
             )
@@ -1094,7 +1106,7 @@ class CollectionMainView(View):
                         break
                 opis += (
                     f"{idx}. {card_name} | `{ptcgo_code}` | #{card_number} x{cnt} "
-                    f"— **{usd_to_bc(price)} BC {COIN_EMOJI}**\n"
+                    f"— **{format_bc(usd_to_bc(price))}**\n"
                 )
             embed.add_field(name="Pozostałe z TOP 5:", value=opis, inline=False)
         hist = user.get("history", [])
@@ -1113,7 +1125,7 @@ class CollectionMainView(View):
         embed.add_field(
             name="Suma wartości kolekcji:",
             value=(
-                f"**{all_total_usd:.2f} USD** / **{all_total_bc} BC {COIN_EMOJI}**\n"
+                f"**{all_total_usd:.2f} USD** / **{format_bc(all_total_bc)}**\n"
                 f"Zmiana od ostatniej aktualizacji: {change}"
             ),
             inline=False
@@ -1122,7 +1134,7 @@ class CollectionMainView(View):
         if boost_count > 0:
             embed.add_field(name="Rare Boosty do użycia", value=f"{boost_count} szt.", inline=False)
         money = user.get("money", 0)
-        embed.add_field(name="💰 Saldo", value=f"{money} BC {COIN_EMOJI}", inline=False)
+        embed.add_field(name="💰 Saldo", value=format_bc(money), inline=False)
         icons = [BADGE_INFO[a]["emoji"] for a in user.get("achievements", []) if a in BADGE_INFO]
         if icons:
             embed.add_field(name="Zdobyte osiągnięcia", value=" ".join(icons), inline=False)
@@ -1288,7 +1300,7 @@ async def build_set_embed(user, sets, set_id):
     if top5:
         lines = []
         for idx, (cid, name, price, url) in enumerate(top5):
-            lines.append(f"{idx+1}. {name} — {usd_to_bc(price)} BC {COIN_EMOJI}")
+            lines.append(f"{idx+1}. {name} — {format_bc(usd_to_bc(price))}")
         embed.add_field(
             name="🔝 **TOP 5 najdroższych kart**",
             value="\n".join(lines),
@@ -1305,13 +1317,196 @@ async def build_set_embed(user, sets, set_id):
 
 class CardRevealView(View):
     def __init__(self, cards, user_id, set_id, set_logo_url=None):
-        super().__init__(timeout=120)
+        super().__init__(timeout=900)
         self.cards = cards
         self.index = 0
         self.summaries = []
         self.user_id = str(user_id)
         self.set_id = set_id
         self.set_logo_url = set_logo_url
+        self.interaction = None
+        self.message = None
+
+    async def on_timeout(self):
+        if self.interaction:
+            try:
+                await self.finalize(self.interaction)
+            except Exception:
+                pass
+
+    async def finalize(self, interaction: discord.Interaction):
+        users = load_users()
+        uid = str(self.user_id)
+        if uid in users:
+            ensure_user_fields(users[uid])
+            max_price = 0
+            max_name = ""
+            existing = Counter(c["id"] for c in users[uid]["cards"])
+            summary_lines = []
+            duplicate_cards = []
+            duplicate_usd = 0.0
+            rarity_emojis = RARITY_EMOJIS
+            for card in self.cards:
+                price = card_price_usd(card)
+                img_url = ""
+                if "images" in card:
+                    img_url = card["images"].get("small") or card["images"].get("large") or ""
+                users[uid]["cards"].append({
+                    "id": card["id"],
+                    "name": card["name"],
+                    "price_usd": price or 0,
+                    "img_url": img_url,
+                    "rarity": card.get("rarity", "")
+                })
+                rarity = card.get("rarity", "Unknown")
+                emoji = rarity_emojis.get(rarity, "❔")
+                line = f"{emoji} {card['name']} ({rarity})"
+                if existing[card["id"]] > 0:
+                    line += " ♻️"
+                    duplicate_cards.append({"id": card["id"], "price_usd": price or 0})
+                    if price:
+                        duplicate_usd += price
+                summary_lines.append(line)
+                existing[card["id"]] += 1
+                if price and price > max_price:
+                    max_price = price
+                    max_name = card["name"]
+            duplicate_bc = usd_to_bc(duplicate_usd)
+            self.summaries = summary_lines
+            update_weekly_best(users[uid], max_price, max_name)
+            all_sets = get_all_sets()
+            if check_master_set(users[uid], self.set_id, all_sets):
+                new_codes = [f"master:{self.set_id}"]
+            else:
+                new_codes = []
+            users[uid]["boosters_opened"] = users[uid].get("boosters_opened", 0) + 1
+            opened = users[uid]["boosters_opened"]
+            if opened >= 1 and grant_achievement(users[uid], "first_booster"):
+                new_codes.append("first_booster")
+            if opened >= 5 and grant_achievement(users[uid], "open_5_boosters"):
+                new_codes.append("open_5_boosters")
+            if opened >= 25 and grant_achievement(users[uid], "open_25_boosters"):
+                new_codes.append("open_25_boosters")
+            if opened >= 100 and grant_achievement(users[uid], "open_100_boosters"):
+                new_codes.append("open_100_boosters")
+            if opened >= 500 and grant_achievement(users[uid], "open_500_boosters"):
+                new_codes.append("open_500_boosters")
+            total_cards = len(users[uid]["cards"])
+            if total_cards >= 1 and grant_achievement(users[uid], "first_card"):
+                new_codes.append("first_card")
+            if total_cards >= 50 and grant_achievement(users[uid], "cards_50"):
+                new_codes.append("cards_50")
+            if total_cards >= 250 and grant_achievement(users[uid], "cards_250"):
+                new_codes.append("cards_250")
+            if total_cards >= 1000 and grant_achievement(users[uid], "cards_1000"):
+                new_codes.append("cards_1000")
+            rare_ids = {c["id"] for c in users[uid]["cards"] if c.get("rarity") == "Rare"}
+            if len(rare_ids) >= 1 and grant_achievement(users[uid], "first_rare"):
+                new_codes.append("first_rare")
+            if len(rare_ids) >= 10 and grant_achievement(users[uid], "rare_10"):
+                new_codes.append("rare_10")
+            if len(rare_ids) >= 50 and grant_achievement(users[uid], "rare_50"):
+                new_codes.append("rare_50")
+            counts = Counter(c["id"] for c in users[uid]["cards"])
+            if any(v >= 2 for v in counts.values()) and grant_achievement(users[uid], "first_duplicate"):
+                new_codes.append("first_duplicate")
+            if any(v >= 10 for v in counts.values()) and grant_achievement(users[uid], "duplicate_10"):
+                new_codes.append("duplicate_10")
+            if len([v for v in counts.values() if v >= 2]) >= 20 and grant_achievement(users[uid], "duplicates_20_cards"):
+                new_codes.append("duplicates_20_cards")
+            set_ids = {c["id"].split("-")[0] for c in users[uid]["cards"]}
+            if len(set_ids) >= 1 and grant_achievement(users[uid], "first_set"):
+                new_codes.append("first_set")
+            if len(set_ids) >= 5 and grant_achievement(users[uid], "sets_5"):
+                new_codes.append("sets_5")
+            if len(set_ids) >= 10 and grant_achievement(users[uid], "sets_10"):
+                new_codes.append("sets_10")
+            if len(set_ids) == len(all_sets) and grant_achievement(users[uid], "sets_all"):
+                new_codes.append("sets_all")
+            if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
+                new_codes.append("all_achievements")
+            save_users(users)
+            for code in new_codes:
+                await send_achievement_message(interaction, code)
+            drop_channel = None
+            if hasattr(interaction, "guild") and interaction.guild:
+                drop_channel = interaction.guild.get_channel(DROP_CHANNEL_ID)
+            # Najdroższa karta powyżej 50 USD
+            max_card = None
+            max_price = 0
+            for card in self.cards:
+                price = card_price_usd(card) or 0
+                if price > max_price:
+                    max_price = price
+                    max_card = card
+            if drop_channel and max_card and max_price >= 50:
+                price_bc = usd_to_bc(max_price)
+                embed = create_embed(
+                    title="🔥 WYJĄTKOWY DROP!",
+                    description=(
+                        f"{interaction.user.mention} trafił/a **{max_card['name']}**\n"
+                        f"`{max_card.get('set', {}).get('ptcgoCode', '-')}` | #{max_card.get('number', '-') }\n"
+                        f"Wartość: {format_bc(price_bc)}"
+                    ),
+                    color=discord.Color.gold(),
+                )
+                if "images" in max_card and "large" in max_card["images"]:
+                    embed.set_image(url=max_card["images"]["large"])
+                await drop_channel.send(embed=embed)
+            summary = "\n".join(self.summaries)
+            total_usd = sum(card_price_usd(c) or 0 for c in self.cards)
+            total_bc = usd_to_bc(total_usd)
+            podsumowanie = (
+                f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({format_bc(total_bc)})\n"
+                f"♻️ **Wartość duplikatów:** {format_bc(duplicate_bc)}"
+            )
+            class AfterBoosterView(View):
+                def __init__(self, duplicates):
+                    super().__init__(timeout=120)
+                    self.duplicates = duplicates
+                    if not self.duplicates:
+                        self.sell_duplicates.disabled = True
+
+                @discord.ui.button(label="Przejdź do kolekcji", style=discord.ButtonStyle.primary)
+                async def to_collection(self, i: discord.Interaction, button: Button):
+                    users = load_users()
+                    user = users[str(i.user.id)]
+                    all_sets = get_all_sets()
+                    boosters_counter = Counter(user["boosters"])
+                    view = CollectionMainView(user, boosters_counter, all_sets)
+                    embed = await view.build_summary_embed()
+                    file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
+                    await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
+
+                @discord.ui.button(label="Sprzedaj duplikaty", style=discord.ButtonStyle.danger)
+                async def sell_duplicates(self, i: discord.Interaction, button: Button):
+                    users = load_users()
+                    user = users[str(i.user.id)]
+                    total = 0
+                    remaining = []
+                    counts = Counter(d["id"] for d in self.duplicates)
+                    for c in user["cards"]:
+                        if counts.get(c["id"], 0) > 0:
+                            counts[c["id"]] -= 1
+                            total += usd_to_bc(c.get("price_usd", 0))
+                        else:
+                            remaining.append(c)
+                    user["cards"] = remaining
+                    user["money"] = user.get("money", 0) + total
+                    user["money_sales"] = user.get("money_sales", 0) + total
+                    save_users(users)
+                    button.disabled = True
+                    await i.response.edit_message(view=self)
+                    await i.followup.send(f"Sprzedano duplikaty za {format_bc(total)}", ephemeral=True)
+            await interaction.edit_original_response(
+                content=(
+                    f"{random.choice(FUN_EMOJIS)} Koniec boostera! Oto Twoje karty:\n"
+                    f"```{summary}```\n"
+                    f"{podsumowanie}"
+                ),
+                embed=None,
+                view=AfterBoosterView(duplicate_cards),
+            )
 
     async def interaction_check(self, interaction):
         return str(interaction.user.id) == self.user_id
@@ -1340,7 +1535,7 @@ class CardRevealView(View):
         if price:
             embed.add_field(
                 name="Wartość rynkowa",
-                value=f"{price:.2f} USD ({usd_to_bc(price)} BC {COIN_EMOJI})",
+                value=f"{price:.2f} USD ({format_bc(usd_to_bc(price))})",
                 inline=True
             )
         else:
@@ -1353,6 +1548,11 @@ class CardRevealView(View):
             self.add_item(self.SummaryButton(self))
         if first or interaction.response.is_done():
             await interaction.edit_original_response(embed=embed, view=self, attachments=[])
+            if first:
+                try:
+                    self.message = await interaction.original_response()
+                except Exception:
+                    self.message = None
         else:
             await interaction.response.edit_message(embed=embed, view=self, attachments=[])
 
@@ -1362,210 +1562,19 @@ class CardRevealView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=True)
             self.parent.index += 1
             await self.parent.show_card(interaction, first=False)
 
-    class SummaryButton(Button):
-        def __init__(self, parent):
-            super().__init__(label="Podsumowanie", style=discord.ButtonStyle.success)
-            self.parent = parent
+class SummaryButton(Button):
+    def __init__(self, parent):
+        super().__init__(label="Podsumowanie", style=discord.ButtonStyle.success)
+        self.parent = parent
 
-        async def callback(self, interaction: discord.Interaction):
-            await interaction.response.defer()
-            users = load_users()
-            uid = str(self.parent.user_id)
-            if uid in users:
-                ensure_user_fields(users[uid])
-                max_price = 0
-                max_name = ""
-                existing = Counter(c["id"] for c in users[uid]["cards"])
-                summary_lines = []
-                duplicate_cards = []
-                duplicate_usd = 0.0
-                rarity_emojis = RARITY_EMOJIS
-                for card in self.parent.cards:
-                    price = None
-                    if "tcgplayer" in card and "prices" in card["tcgplayer"]:
-                        for ver in card["tcgplayer"]["prices"].values():
-                            if "market" in ver and ver["market"]:
-                                price = ver["market"]
-                                break
-                    img_url = ""
-                    if "images" in card:
-                        img_url = card["images"].get("small") or card["images"].get("large") or ""
-                    users[uid]["cards"].append({
-                        "id": card["id"],
-                        "name": card["name"],
-                        "price_usd": price or 0,
-                        "img_url": img_url,
-                        "rarity": card.get("rarity", "")
-                    })
-                    rarity = card.get("rarity", "Unknown")
-                    emoji = rarity_emojis.get(rarity, "❔")
-                    line = f"{emoji} {card['name']} ({rarity})"
-                    if existing[card["id"]] > 0:
-                        line += " ♻️"
-                        duplicate_cards.append({"id": card["id"], "price_usd": price or 0})
-                        if price:
-                            duplicate_usd += price
-                    summary_lines.append(line)
-                    existing[card["id"]] += 1
-                    if price and price > max_price:
-                        max_price = price
-                        max_name = card["name"]
-                duplicate_bc = usd_to_bc(duplicate_usd)
-                self.parent.summaries = summary_lines
-                update_weekly_best(users[uid], max_price, max_name)
-                all_sets = get_all_sets()
-                if check_master_set(users[uid], self.parent.set_id, all_sets):
-                    new_codes.append(f"master:{self.parent.set_id}")
-                users[uid]["boosters_opened"] = users[uid].get("boosters_opened", 0) + 1
-                opened = users[uid]["boosters_opened"]
-                ach_list = users[uid].setdefault("achievements", [])
-                new_codes = []
-                if opened >= 1 and grant_achievement(users[uid], "first_booster"):
-                    new_codes.append("first_booster")
-                if opened >= 5 and grant_achievement(users[uid], "open_5_boosters"):
-                    new_codes.append("open_5_boosters")
-                if opened >= 25 and grant_achievement(users[uid], "open_25_boosters"):
-                    new_codes.append("open_25_boosters")
-                if opened >= 100 and grant_achievement(users[uid], "open_100_boosters"):
-                    new_codes.append("open_100_boosters")
-                if opened >= 500 and grant_achievement(users[uid], "open_500_boosters"):
-                    new_codes.append("open_500_boosters")
-                total_cards = len(users[uid]["cards"])
-                if total_cards >= 1 and grant_achievement(users[uid], "first_card"):
-                    new_codes.append("first_card")
-                if total_cards >= 50 and grant_achievement(users[uid], "cards_50"):
-                    new_codes.append("cards_50")
-                if total_cards >= 250 and grant_achievement(users[uid], "cards_250"):
-                    new_codes.append("cards_250")
-                if total_cards >= 1000 and grant_achievement(users[uid], "cards_1000"):
-                    new_codes.append("cards_1000")
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        await self.parent.finalize(interaction)
 
-                # Rzadkie karty
-                rare_ids = {c["id"] for c in users[uid]["cards"] if c.get("rarity") == "Rare"}
-                if len(rare_ids) >= 1 and grant_achievement(users[uid], "first_rare"):
-                    new_codes.append("first_rare")
-                if len(rare_ids) >= 10 and grant_achievement(users[uid], "rare_10"):
-                    new_codes.append("rare_10")
-                if len(rare_ids) >= 50 and grant_achievement(users[uid], "rare_50"):
-                    new_codes.append("rare_50")
-
-                counts = Counter(c["id"] for c in users[uid]["cards"])
-                if any(v >= 2 for v in counts.values()) and grant_achievement(users[uid], "first_duplicate"):
-                    new_codes.append("first_duplicate")
-                if any(v >= 10 for v in counts.values()) and grant_achievement(users[uid], "duplicate_10"):
-                    new_codes.append("duplicate_10")
-                if len([v for v in counts.values() if v >= 2]) >= 20 and grant_achievement(users[uid], "duplicates_20_cards"):
-                    new_codes.append("duplicates_20_cards")
-
-                set_ids = {c["id"].split("-")[0] for c in users[uid]["cards"]}
-                if len(set_ids) >= 1 and grant_achievement(users[uid], "first_set"):
-                    new_codes.append("first_set")
-                if len(set_ids) >= 5 and grant_achievement(users[uid], "sets_5"):
-                    new_codes.append("sets_5")
-                if len(set_ids) >= 10 and grant_achievement(users[uid], "sets_10"):
-                    new_codes.append("sets_10")
-                if len(set_ids) == len(all_sets) and grant_achievement(users[uid], "sets_all"):
-                    new_codes.append("sets_all")
-
-                if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
-                    new_codes.append("all_achievements")
-
-                save_users(users)
-                for code in new_codes:
-                    await send_achievement_message(interaction, code)
-                drop_channel = None
-                if hasattr(interaction, "guild") and interaction.guild:
-                    drop_channel = interaction.guild.get_channel(DROP_CHANNEL_ID)
-                for card in self.parent.cards:
-                    rarity = card.get("rarity", "")
-                    price = None
-                    if "tcgplayer" in card and "prices" in card["tcgplayer"]:
-                        for ver in card["tcgplayer"]["prices"].values():
-                            if "market" in ver and ver["market"]:
-                                price = ver["market"]
-                                break
-                    price_bc = usd_to_bc(price or 0)
-                    if drop_channel and rarity in RAREST_TYPES:
-                        embed = create_embed(
-                            title="🔥 WYJĄTKOWY DROP!",
-                            description=(
-                                f"{interaction.user.mention} trafił/a **{card['name']}**\n"
-                                f"`{card.get('set', {}).get('ptcgoCode', '-')}` | #{card.get('number', '-') }\n"
-                                f"Rzadkość: {card.get('rarity', 'Unknown')}\n"
-                                f"Wartość: **{price_bc} BC {COIN_EMOJI}**"
-                            ),
-                            color=discord.Color.gold(),
-                        )
-                        if "images" in card and "large" in card["images"]:
-                            embed.set_image(url=card["images"]["large"])
-                        await drop_channel.send(embed=embed)
-                summary = "\n".join(self.parent.summaries)
-                total_usd = 0
-                for card in self.parent.cards:
-                    price = None
-                    if "tcgplayer" in card and "prices" in card["tcgplayer"]:
-                        for ver in card["tcgplayer"]["prices"].values():
-                            if "market" in ver and ver["market"]:
-                                price = ver["market"]
-                                break
-                    if price:
-                        total_usd += price
-                total_bc = usd_to_bc(total_usd)
-                podsumowanie = (
-                    f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({total_bc} BC {COIN_EMOJI})\n"
-                    f"♻️ **Wartość duplikatów:** {duplicate_bc} BC {COIN_EMOJI}"
-                )
-                class AfterBoosterView(View):
-                    def __init__(self, duplicates):
-                        super().__init__(timeout=120)
-                        self.duplicates = duplicates
-                        if not self.duplicates:
-                            self.sell_duplicates.disabled = True
-
-                    @discord.ui.button(label="Przejdź do kolekcji", style=discord.ButtonStyle.primary)
-                    async def to_collection(self, i: discord.Interaction, button: Button):
-                        users = load_users()
-                        user = users[str(i.user.id)]
-                        all_sets = get_all_sets()
-                        boosters_counter = Counter(user["boosters"])
-                        view = CollectionMainView(user, boosters_counter, all_sets)
-                        embed = await view.build_summary_embed()
-                        file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
-                        await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
-
-                    @discord.ui.button(label="Sprzedaj duplikaty", style=discord.ButtonStyle.danger)
-                    async def sell_duplicates(self, i: discord.Interaction, button: Button):
-                        users = load_users()
-                        user = users[str(i.user.id)]
-                        total = 0
-                        remaining = []
-                        counts = Counter(d["id"] for d in self.duplicates)
-                        for c in user["cards"]:
-                            if counts.get(c["id"], 0) > 0:
-                                counts[c["id"]] -= 1
-                                total += usd_to_bc(c.get("price_usd", 0))
-                            else:
-                                remaining.append(c)
-                        user["cards"] = remaining
-                        user["money"] = user.get("money", 0) + total
-                        user["money_sales"] = user.get("money_sales", 0) + total
-                        save_users(users)
-                        button.disabled = True
-                        await i.response.edit_message(view=self)
-                        await i.followup.send(f"Sprzedano duplikaty za {total} BC {COIN_EMOJI}", ephemeral=True)
-                await interaction.edit_original_response(
-                    content=(
-                        f"{random.choice(FUN_EMOJIS)} Koniec boostera! Oto Twoje karty:\n"
-                        f"```{summary}```\n"
-                        f"{podsumowanie}"
-                    ),
-                    embed=None,
-                    view=AfterBoosterView(duplicate_cards),
-                )
 
 
 class AchievementsView(View):
@@ -1637,7 +1646,7 @@ async def start_cmd(interaction: discord.Interaction):
         "Zbieraj karty Pok\xe9mon, kupuj boostery w komendzie `/sklep` i odbieraj codzienne monety przy pomocy `/daily`.\n"
         "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj kolekcj\u0119 przez `/kolekcja`.\n"
         "Po wi\u0119cej informacji u\x17yj `/help`.\n\n"
-        f"✅ Utworzono konto! Otrzymujesz {START_MONEY} BC {COIN_EMOJI}"
+        f"✅ Utworzono konto! Otrzymujesz {format_bc(START_MONEY)}"
     )
     embed = create_embed(
         title="Witaj w Pok\xe9 Booster Bot!",
@@ -1678,13 +1687,13 @@ async def otworz(interaction: discord.Interaction):
                 chosen = menu_booster.values[0]
                 users[user_id]["boosters"].remove(chosen)
                 save_users(users)
-                await i2.response.defer()
+                await i2.response.defer(ephemeral=True)
                 await open_booster(i2, chosen)
         await interaction.response.send_message("🃏 Wybierz booster do otwarcia:", view=BoosterSelectView(), ephemeral=True)
     else:
         chosen = users[user_id]["boosters"].pop(0)
         save_users(users)
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         await open_booster(interaction, chosen)
 
 # --- FUNKCJA Otwierania boostera (z logo setu) ---
@@ -1704,6 +1713,7 @@ async def open_booster(interaction, set_id):
         set_id=set_id,
         set_logo_url=logo_url,
     )
+    view.interaction = interaction
 
     # Interaction is already deferred before calling this function, so we can
     # always edit the original response to show the first card.
@@ -1741,10 +1751,10 @@ async def saldo(interaction: discord.Interaction):
     events = user.get("money_events", 0)
     ach = user.get("money_achievements", 0)
     embed = create_embed(title="Twoje saldo", color=discord.Color.green())
-    embed.add_field(name="Łącznie", value=f"{money} BC {COIN_EMOJI}", inline=False)
-    embed.add_field(name="Sprzedaż kart", value=f"{sales} BC {COIN_EMOJI}", inline=False)
-    embed.add_field(name="Eventy", value=f"{events} BC {COIN_EMOJI}", inline=False)
-    embed.add_field(name="Osiągnięcia", value=f"{ach} BC {COIN_EMOJI}", inline=False)
+    embed.add_field(name="Łącznie", value=format_bc(money), inline=False)
+    embed.add_field(name="Sprzedaż kart", value=format_bc(sales), inline=False)
+    embed.add_field(name="Eventy", value=format_bc(events), inline=False)
+    embed.add_field(name="Osiągnięcia", value=format_bc(ach), inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- KOMENDA DAILY ---
@@ -1802,7 +1812,7 @@ async def daily(interaction: discord.Interaction):
         await send_achievement_message(interaction, code)
     emj = random.choice(FUN_EMOJIS)
     day = (streak - 1) % 7 + 1
-    msg = f"{emj} Otrzymujesz {amount} BC {COIN_EMOJI}! (dzień {day}/7)"
+    msg = f"{emj} Otrzymujesz {format_bc(amount)}! (dzień {day}/7)"
     if bonus:
         msg += f" 🎊 Premia {bonus} BC"
     await interaction.response.send_message(msg, ephemeral=True)
@@ -1854,7 +1864,7 @@ async def ranking_cmd(interaction: discord.Interaction):
             entries.append((uid, best.get("price", 0), best.get("name", "")))
     top3 = sorted(entries, key=lambda x: x[1], reverse=True)[:3]
     lines = [
-        f"{idx+1}. <@{uid}> - {name} ({usd_to_bc(price)} BC {COIN_EMOJI})"
+        f"{idx+1}. <@{uid}> - {name} ({format_bc(usd_to_bc(price))})"
         for idx, (uid, price, name) in enumerate(top3)
     ]
     if not lines:
@@ -1963,7 +1973,7 @@ async def on_message(message):
         if random.random() < 0.5:
             amount = random.randint(20, 50)
             await message.channel.send(
-                f"🎁 Gratis {amount} BC {COIN_EMOJI}! Kto pierwszy kliknie, zgarnia.",
+                f"🎁 Gratis {format_bc(amount)}! Kto pierwszy kliknie, zgarnia.",
                 view=QuickBonusView(amount=amount)
             )
         else:
