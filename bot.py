@@ -131,6 +131,7 @@ BADGE_INFO = {
     "new_player": {"name": "Nowy gracz (1 dzień)", "emoji": "🆕"},
     "veteran": {"name": "Weteran (30 dni)", "emoji": "🕰️"},
     "legendary_player": {"name": "Legendarny gracz (100 dni)", "emoji": "🏆🕰️"},
+    "community_week": {"name": "Najlepszy drop tygodnia (społeczność)", "emoji": "👍"},
     "all_achievements": {"name": "Mistrz wszystkich osiągnięć", "emoji": "🏅🏅🏅"},
 }
 
@@ -170,6 +171,7 @@ ACHIEVEMENT_REWARDS = {
     "new_player": 10,
     "veteran": 50,
     "legendary_player": 200,
+    "community_week": 150,
     "master": 200,
     "all_achievements": 1000,
 }
@@ -235,6 +237,7 @@ ACHIEVEMENT_GROUPS = [
             ("daily_10", 10),
             ("daily_30", 30),
             ("top3_week", 1),
+            ("community_week", 1),
             ("all_achievements", 1),
         ],
     ),
@@ -579,7 +582,7 @@ def build_shop_embed(user_id):
         ),
         color=EMBED_COLOR,
     )
-    embed.set_image(url="attachment://shop.png")
+    embed.set_thumbnail(url="attachment://shop.png")
     embed.set_footer(text="BoguckiCoin (BC)", icon_url="attachment://coin.png")
 
     if purchases:
@@ -698,6 +701,31 @@ class QuickBonusView(View):
     async def on_timeout(self):
         global random_event_active
         random_event_active = False
+
+class DropRatingView(View):
+    def __init__(self, owner_id):
+        super().__init__(timeout=None)
+        self.owner_id = str(owner_id)
+
+    @discord.ui.button(emoji="👍", style=discord.ButtonStyle.secondary)
+    async def vote(self, interaction: discord.Interaction, button: Button):
+        if str(interaction.user.id) == self.owner_id:
+            await interaction.response.send_message("Nie możesz głosować na swój drop!", ephemeral=True)
+            return
+        users = load_users()
+        owner = users.get(self.owner_id)
+        if not owner:
+            await interaction.response.send_message("Użytkownik nieznany", ephemeral=True)
+            return
+        ensure_user_fields(owner)
+        week, year = current_week_info()
+        wc = owner.get("weekly_community", {})
+        if wc.get("week") != week or wc.get("year") != year:
+            wc = {"week": week, "year": year, "score": 0}
+        wc["score"] = wc.get("score", 0) + 1
+        owner["weekly_community"] = wc
+        save_users(users)
+        await interaction.response.send_message("Dzięki za reakcję!", ephemeral=True)
 
 class ShopView(View):
     def __init__(self, user_id):
@@ -959,6 +987,35 @@ class MyClient(discord.Client):
                     changed = True
                     for code in new_codes:
                         user_obj = self.get_user(int(uid))
+                        if user_obj:
+                            await send_achievement_message(user_obj, code)
+                # Community ranking
+                community_entries = []
+                for uid, data in users.items():
+                    wc = data.get("weekly_community")
+                    if (
+                        wc
+                        and wc.get("week") == week
+                        and wc.get("year") == year
+                        and wc.get("score", 0) > 0
+                    ):
+                        community_entries.append((uid, wc.get("score", 0)))
+                community_entries.sort(key=lambda x: x[1], reverse=True)
+                if community_entries:
+                    best_uid, best_score = community_entries[0]
+                    reward = 100
+                    users[best_uid]["money"] = users[best_uid].get("money", 0) + reward
+                    users[best_uid]["money_events"] = users[best_uid].get("money_events", 0) + reward
+                    lines.append("")
+                    lines.append(f"🏅 Nagroda społeczności: <@{best_uid}> ({best_score} 👍)")
+                    new_codes = []
+                    if grant_achievement(users[best_uid], "community_week"):
+                        new_codes.append("community_week")
+                    if check_for_all_achievements(users[best_uid]) and grant_achievement(users[best_uid], "all_achievements"):
+                        new_codes.append("all_achievements")
+                    changed = True
+                    for code in new_codes:
+                        user_obj = self.get_user(int(best_uid))
                         if user_obj:
                             await send_achievement_message(user_obj, code)
                 if lines:
@@ -1516,11 +1573,11 @@ class CardRevealView(View):
             if img:
                 public_embed = create_embed(title="Najlepsza karta", color=discord.Color.gold())
                 public_embed.set_image(url=img)
+            booster_name = next((s['name'] for s in all_sets if s['id'] == self.set_id), self.set_id)
             public_msg = (
-                f"{interaction.user.mention} otworzył booster!\n"
-                f"```{summary}```\n{podsumowanie}"
+                f"{interaction.user.display_name} otworzył {booster_name} o wartości {format_bc(total_bc)}"
             )
-            await interaction.followup.send(content=public_msg, embed=public_embed, ephemeral=False)
+            await interaction.followup.send(content=public_msg, embed=public_embed, view=DropRatingView(self.user_id), ephemeral=False)
 
     async def interaction_check(self, interaction):
         return str(interaction.user.id) == self.user_id
@@ -1884,6 +1941,16 @@ async def ranking_cmd(interaction: discord.Interaction):
         f"{idx+1}. <@{uid}> - {name} ({format_bc(usd_to_bc(price))})"
         for idx, (uid, price, name) in enumerate(top3)
     ]
+    community = []
+    for uid, data in users.items():
+        wc = data.get("weekly_community")
+        if wc and wc.get("week") == week and wc.get("year") == year:
+            community.append((uid, wc.get("score", 0)))
+    community.sort(key=lambda x: x[1], reverse=True)
+    if community:
+        best_uid, best_score = community[0]
+        lines.append("")
+        lines.append(f"🏅 Nagroda społeczności: <@{best_uid}> ({best_score} 👍)")
     if not lines:
         lines = ["Brak danych"]
     embed = create_embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
