@@ -341,7 +341,7 @@ def build_achievement_pages(user, all_sets):
     pages = []
     for title, entries in ACHIEVEMENT_GROUPS:
         embed = create_embed(title=title, color=discord.Color.green())
-        embed.set_image(url="attachment://achivment.png")
+        embed.set_thumbnail(url="attachment://achivment.png")
         for code, target in entries:
             value = 0
             tgt = target
@@ -526,7 +526,7 @@ def build_cart_embed(user_id, message):
     cart = carts.get(user_id, {"boosters": {}, "items": {}})
     total = compute_cart_total(cart)
     embed = create_embed(title="Koszyk", description=message, color=EMBED_COLOR)
-    embed.set_image(url="attachment://koszyk.png")
+    embed.set_thumbnail(url="attachment://koszyk.png")
     embed.add_field(name="Wartość koszyka", value=format_bc(total), inline=False)
     embed.add_field(name="Twoje saldo", value=format_bc(money), inline=False)
     if money < total:
@@ -714,18 +714,26 @@ class DropRatingView(View):
             return
         users = load_users()
         owner = users.get(self.owner_id)
-        if not owner:
+        voter_id = str(interaction.user.id)
+        voter = users.get(voter_id)
+        if not owner or not voter:
             await interaction.response.send_message("Użytkownik nieznany", ephemeral=True)
             return
         ensure_user_fields(owner)
+        ensure_user_fields(voter)
         week, year = current_week_info()
         wc = owner.get("weekly_community", {})
         if wc.get("week") != week or wc.get("year") != year:
             wc = {"week": week, "year": year, "score": 0}
         wc["score"] = wc.get("score", 0) + 1
         owner["weekly_community"] = wc
+        voter["money"] = voter.get("money", 0) + 1
+        voter["money_events"] = voter.get("money_events", 0) + 1
         save_users(users)
-        await interaction.response.send_message("Dzięki za reakcję!", ephemeral=True)
+        await interaction.response.send_message(
+            f"Dzięki za reakcję! Otrzymujesz {format_bc(1)}",
+            ephemeral=True,
+        )
 
 class ShopView(View):
     def __init__(self, user_id):
@@ -860,17 +868,17 @@ class ShopView(View):
                                     await i4.response.send_modal(modal)
 
                             embed = create_embed(title="Wybierz set", color=EMBED_COLOR)
-                            embed.set_image(url="attachment://wybierz_set.png")
+                            embed.set_thumbnail(url="attachment://wybierz_set.png")
                             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                             await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
 
                     embed = create_embed(title="Wybierz erę", color=EMBED_COLOR)
-                    embed.set_image(url="attachment://wybierz_set.png")
+                    embed.set_thumbnail(url="attachment://wybierz_set.png")
                     file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
                     await i2.response.edit_message(embed=embed, view=EraView(self.parent.parent), attachments=[file])
 
             embed = create_embed(title="Wybierz język", color=EMBED_COLOR)
-            embed.set_image(url="attachment://wybierz_set.png")
+            embed.set_thumbnail(url="attachment://wybierz_set.png")
             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
             await interaction.response.send_message(embed=embed, view=LanguageView(self), ephemeral=True, file=file)
 
@@ -904,7 +912,7 @@ class ShopView(View):
                     await i2.response.send_modal(modal)
 
             embed = create_embed(title="Wybierz item", color=EMBED_COLOR)
-            embed.set_image(url="attachment://koszyk.png")
+            embed.set_thumbnail(url="attachment://koszyk.png")
             file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
             await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, files=[file])
 
@@ -1060,7 +1068,7 @@ class MyClient(discord.Client):
                     else:
                         embed.description = f"Typ: {ev.get('type')}"
                     file = discord.File(GRAPHIC_DIR / "logo.png", filename="logo.png")
-                    embed.set_image(url="attachment://logo.png")
+                    embed.set_thumbnail(url="attachment://logo.png")
                     channel = self.get_channel(DROP_CHANNEL_ID)
                     if channel:
                         await channel.send(embed=embed, file=file)
@@ -1118,7 +1126,7 @@ class CollectionMainView(View):
             ),
             color=EMBED_COLOR
         )
-        embed.set_image(url="attachment://kolekcja.png")
+        embed.set_thumbnail(url="attachment://kolekcja.png")
         if top5 and top5[0][1] > 0:
             najdrozsza_id = top5[0][0]
             img_url = ""
@@ -1219,7 +1227,7 @@ class CollectionMainView(View):
                 description="\n".join(lines),
                 color=EMBED_COLOR
             )
-            embed.set_image(url="attachment://sety.png")
+            embed.set_thumbnail(url="attachment://sety.png")
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
 
@@ -1287,7 +1295,7 @@ class CollectionMainView(View):
                 description="Wybierz set z listy poniżej",
                 color=EMBED_COLOR,
             )
-            embed.set_image(url="attachment://sety.png")
+            embed.set_thumbnail(url="attachment://sety.png")
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
     class BoosterOpenButton(Button):
@@ -1355,7 +1363,7 @@ async def build_set_embed(user, sets, set_id):
         ),
         color=EMBED_COLOR
     )
-    embed.set_image(url="attachment://sety.png")
+    embed.set_thumbnail(url="attachment://sety.png")
     if top5:
         lines = []
         for idx, (cid, name, price, url) in enumerate(top5):
@@ -1719,7 +1727,8 @@ async def start_cmd(interaction: discord.Interaction):
     welcome = (
         "Zbieraj karty Pok\xe9mon, kupuj boostery w komendzie `/sklep` i odbieraj codzienne monety przy pomocy `/daily`.\n"
         "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj kolekcj\u0119 przez `/kolekcja`.\n"
-        "Po wi\u0119cej informacji u\x17yj `/help`.\n\n"
+        "Reaguj 👍 na dropy innych graczy z podsumowania i zgarniaj 1 BC za każdy głos.\n"
+        "Po więcej informacji użyj `/help`.\n\n"
         f"✅ Utworzono konto! Otrzymujesz {format_bc(START_MONEY)}"
     )
     embed = create_embed(
@@ -1727,7 +1736,7 @@ async def start_cmd(interaction: discord.Interaction):
         description=welcome,
         color=discord.Color.green()
     )
-    embed.set_image(url="attachment://CardCollector.png")
+    embed.set_thumbnail(url="attachment://CardCollector.png")
     file = discord.File(GRAPHIC_DIR / "CardCollector.png", filename="CardCollector.png")
     await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
     await send_achievement_message(interaction, "account_created")
