@@ -53,6 +53,7 @@ def ensure_user_fields(user):
     user.setdefault("last_daily", 0)
     user.setdefault("daily_streak", 0)
     user.setdefault("weekly_best", {"week": 0, "year": 0, "price": 0, "name": ""})
+    user.setdefault("weekly_community", {"week": 0, "year": 0, "score": 0})
     user.setdefault("achievements", [])
     user.setdefault("badges", [])
     user.setdefault("created_at", int(time.time()))
