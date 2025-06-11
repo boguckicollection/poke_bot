@@ -1627,7 +1627,7 @@ class CardRevealView(View):
             public_msg = (
                 f"{interaction.user.display_name} otworzył {booster_name} o wartości {format_bc(total_bc)}"
             )
-            await interaction.followup.send(content=public_msg, embed=public_embed, view=DropRatingView(self.user_id), ephemeral=False)
+            await interaction.followup.send(content=public_msg, embed=public_embed, view=QuickBonusView.DropRatingView(self.user_id), ephemeral=False)
 
     async def interaction_check(self, interaction):
         return str(interaction.user.id) == self.user_id
