@@ -407,21 +407,25 @@ ITEMS = {
         "name": "Rare Booster",
         "price": 200,
         "desc": "Zwiększa szansę na rzadkie karty w następnym boosterze",
+        "emoji": "<:rare_boost:1382252200113340600>",
     },
     "double_daily": {
         "name": "Double Daily",
         "price": 300,
         "desc": "Przez 7 dni podwaja monety z komendy /daily",
+        "emoji": "<:double_daily:1382252190466441297>",
     },
     "mystery_booster": {
         "name": "Mystery Booster",
         "price": 500,
         "desc": "Natychmiast daje losowy booster",
+        "emoji": "<:mystery_booster:1382252195684155512>",
     },
     "streak_freeze": {
         "name": "Streak Freeze",
         "price": 150,
         "desc": "Utrzymuje serię daily gdy raz ją pominiesz",
+        "emoji": "<:streak_freeze:1382252205381390338>",
     },
 }
 
@@ -608,7 +612,7 @@ def build_shop_embed(user_id):
                 inline=False,
             )
     items_desc = [
-        f"**{info['name']}** - {format_bc(info['price'])} \u2014 {info['desc']}"
+        f"**{info['name']} {info.get('emoji', '')}** - {format_bc(info['price'])} \u2014 {info['desc']}"
         for info in ITEMS.values()
     ]
     embed.add_field(name="Dostępne itemy", value="\n".join(items_desc) or "Brak", inline=False)
@@ -619,7 +623,10 @@ def build_shop_embed(user_id):
             name = next((s['name'] for s in sets if s['id']==sid), sid)
             lines.append(f"{name} x{q}")
         for iid, q in cart.get("items", {}).items():
-            lines.append(f"{ITEMS[iid]['name']} x{q}")
+            info = ITEMS.get(iid, {})
+            name = info.get('name', iid)
+            emj = info.get('emoji', '')
+            lines.append(f"{name} {emj} x{q}")
         total = compute_cart_total(cart)
         lines.append(f"**Razem: {format_bc(total)}**")
         embed.add_field(name="Koszyk", value="\n".join(lines), inline=False)
@@ -879,7 +886,10 @@ class ShopView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            options = [discord.SelectOption(label=info['name'], value=iid) for iid, info in ITEMS.items()]
+            options = [
+                discord.SelectOption(label=f"{info['name']} {info.get('emoji', '')}", value=iid)
+                for iid, info in ITEMS.items()
+            ]
 
             class ItemSelectView(View):
                 def __init__(self, parent):
@@ -889,13 +899,18 @@ class ShopView(View):
                 @select(placeholder="Wybierz item", options=options)
                 async def select_cb(self, i2: discord.Interaction, menu_item: discord.ui.Select):
                     item_id = menu_item.values[0]
-                    item_name = ITEMS[item_id]['name']
+                    item_info = ITEMS[item_id]
+                    item_name = item_info['name']
+                    item_emoji = item_info.get('emoji', '')
 
                     async def after_qty(i3, qty):
                         cart = carts.setdefault(self.parent.parent.user_id, {"boosters": {}, "items": {}})
                         cart['items'][item_id] = cart['items'].get(item_id, 0) + qty
                         await self.parent.parent.update()
-                        embed = build_cart_embed(self.parent.parent.user_id, f"Dodano {qty}x {item_name}")
+                        embed = build_cart_embed(
+                            self.parent.parent.user_id,
+                            f"Dodano {qty}x {item_name} {item_emoji}"
+                        )
                         file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
                         await i3.response.send_message(embed=embed, view=QuickBuyView(self.parent.parent), ephemeral=True, files=[file])
 
