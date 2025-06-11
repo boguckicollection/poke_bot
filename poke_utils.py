@@ -25,6 +25,8 @@ def load_users():
             return json.load(f)
     except FileNotFoundError:
         return {}
+    except json.JSONDecodeError:
+        return {}
 
 def save_users(data):
     with open(USERS_FILE, "w") as f:
@@ -35,6 +37,8 @@ def get_all_sets():
         with open(SETS_FILE, "r") as f:
             return json.load(f)
     except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
         return []
 
 
@@ -64,7 +68,7 @@ def load_prices():
     try:
         with open(PRICE_FILE, "r") as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         sets = get_all_sets()
         prices = {}
         for s in sets:
@@ -90,7 +94,7 @@ def load_data():
     try:
         with open(DATA_FILE, "r") as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 
@@ -103,7 +107,7 @@ def load_events():
     try:
         with open(EVENTS_FILE, "r") as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         return []
 
 
