@@ -1067,7 +1067,7 @@ class MyClient(discord.Client):
         await self.wait_until_ready()
         while not self.is_closed():
             now = time.time()
-            events = load_events()
+            events = await asyncio.to_thread(load_events)
             changed = False
             for ev in events:
                 if (
@@ -1098,7 +1098,7 @@ class MyClient(discord.Client):
                     ev["announced"] = True
                     changed = True
         if changed:
-            save_events(events)
+            await asyncio.to_thread(save_events, events)
         await asyncio.sleep(60)
 
     async def booster_queue_worker(self):
