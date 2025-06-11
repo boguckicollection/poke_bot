@@ -446,6 +446,8 @@ FUN_EMOJIS = ["✨", "🎉", "🎲", "🔥", "💎", "🎁", "🌟", "🚀", "�
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
 random_event_active = False
+# Kolejka do otwierania boosterów
+BOOSTER_QUEUE = asyncio.Queue()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -961,6 +963,7 @@ class MyClient(discord.Client):
         self.loop.create_task(self.shop_update_loop())
         self.loop.create_task(self.weekly_ranking_loop())
         self.loop.create_task(self.event_notification_loop())
+        self.loop.create_task(self.booster_queue_worker())
         print(f"✅ Zalogowano jako {self.user} (ID: {self.user.id})")
 
     async def shop_update_loop(self):
@@ -1094,9 +1097,27 @@ class MyClient(discord.Client):
                         await channel.send(embed=embed, file=file)
                     ev["announced"] = True
                     changed = True
-            if changed:
-                save_events(events)
-            await asyncio.sleep(60)
+        if changed:
+            save_events(events)
+        await asyncio.sleep(60)
+
+    async def booster_queue_worker(self):
+        await self.wait_until_ready()
+        while not self.is_closed():
+            interaction, set_id = await BOOSTER_QUEUE.get()
+            try:
+                await open_booster(interaction, set_id)
+            except Exception as e:
+                print(f"Error opening booster: {e}")
+                try:
+                    await interaction.edit_original_response(
+                        content="❌ Wystąpił błąd podczas otwierania boostera.",
+                        embed=None,
+                        view=None,
+                    )
+                except Exception:
+                    pass
+            BOOSTER_QUEUE.task_done()
 
 client = MyClient()
 
@@ -1350,8 +1371,12 @@ class CollectionMainView(View):
                     if chosen in users[uid]["boosters"]:
                         users[uid]["boosters"].remove(chosen)
                         save_users(users)
-                        await i2.response.defer()
-                        await open_booster(i2, chosen)
+                        await i2.response.defer(ephemeral=True)
+                        await i2.followup.send(
+                            "⏳ Dodano do kolejki otwierania boostera...",
+                            ephemeral=True,
+                        )
+                        await BOOSTER_QUEUE.put((i2, chosen))
                     else:
                         await i2.response.send_message("Nie znaleziono boostera.", ephemeral=True)
 
@@ -1788,13 +1813,21 @@ async def otworz(interaction: discord.Interaction):
                 users[user_id]["boosters"].remove(chosen)
                 save_users(users)
                 await i2.response.defer(ephemeral=True)
-                await open_booster(i2, chosen)
+                await i2.followup.send(
+                    "⏳ Dodano do kolejki otwierania boostera...",
+                    ephemeral=True,
+                )
+                await BOOSTER_QUEUE.put((i2, chosen))
         await interaction.response.send_message("🃏 Wybierz booster do otwarcia:", view=BoosterSelectView(), ephemeral=True)
     else:
         chosen = users[user_id]["boosters"].pop(0)
         save_users(users)
         await interaction.response.defer(ephemeral=True)
-        await open_booster(interaction, chosen)
+        await interaction.followup.send(
+            "⏳ Dodano do kolejki otwierania boostera...",
+            ephemeral=True,
+        )
+        await BOOSTER_QUEUE.put((interaction, chosen))
 
 # --- FUNKCJA Otwierania boostera (z logo setu) ---
 async def open_booster(interaction, set_id):
@@ -2114,7 +2147,11 @@ async def on_message(message):
                         users[user_id]["boosters"].remove(set_id)
                         save_users(users)
                         await interaction.response.defer(thinking=True, ephemeral=True)
-                        await open_booster(interaction, set_id)
+                        await interaction.followup.send(
+                            "⏳ Dodano do kolejki otwierania boostera...",
+                            ephemeral=True,
+                        )
+                        await BOOSTER_QUEUE.put((interaction, set_id))
                     else:
                         await interaction.response.send_message("Nie znaleziono boostera do otwarcia.", ephemeral=True)
                 @discord.ui.button(label="Pokaż boostery", style=discord.ButtonStyle.primary)
