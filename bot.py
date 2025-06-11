@@ -903,10 +903,16 @@ class ShopView(View):
             self.parent = parent
 
         async def callback(self, interaction: discord.Interaction):
-            options = [
-                discord.SelectOption(label=f"{info['name']} {info.get('emoji', '')}", value=iid)
-                for iid, info in ITEMS.items()
-            ]
+            options = []
+            for iid, info in ITEMS.items():
+                emoji_str = info.get("emoji")
+                if emoji_str and emoji_str.startswith("<"):
+                    emoji = discord.PartialEmoji.from_str(emoji_str)
+                else:
+                    emoji = emoji_str
+                options.append(
+                    discord.SelectOption(label=info["name"], value=iid, emoji=emoji)
+                )
 
             class ItemSelectView(View):
                 def __init__(self, parent):
