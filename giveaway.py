@@ -3,11 +3,20 @@ import random
 import asyncio
 from datetime import datetime, timezone, timedelta
 from discord.ui import Modal, View, TextInput, Button
-from poke_utils import load_users, save_users, get_all_sets, EMBED_COLOR, create_embed
+from poke_utils import (
+    load_users,
+    save_users,
+    get_all_sets,
+    EMBED_COLOR,
+    create_embed,
+    load_channels,
+)
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 GRAPHIC_DIR = BASE_DIR / "graphic"
+CHANNELS = load_channels()
+GIVEAWAY_CHANNEL_ID = int(CHANNELS.get("giveaway", 0))
 
 def parse_time_string(s: str) -> int:
     units = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
@@ -61,10 +70,17 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
         embed.set_footer(text="Kliknij przycisk poniżej, aby wziąć udział!")
 
         view = GiveawayView(booster_id, liczba, zwyciezcy, czas_s)
-        message = await interaction.channel.send(embed=embed, view=view, file=file)
+        target_channel = interaction.guild.get_channel(GIVEAWAY_CHANNEL_ID) if GIVEAWAY_CHANNEL_ID else interaction.channel
+        message = await target_channel.send(embed=embed, view=view, file=file)
         view.message = message
         asyncio.create_task(view.update_embed_loop())
-        await interaction.response.send_message("✅ Giveaway został utworzony!", ephemeral=True)
+        if target_channel != interaction.channel:
+            await interaction.response.send_message(
+                f"✅ Giveaway został utworzony na <#{GIVEAWAY_CHANNEL_ID}>!",
+                ephemeral=True,
+            )
+        else:
+            await interaction.response.send_message("✅ Giveaway został utworzony!", ephemeral=True)
 
 class GiveawayView(View):
     def __init__(self, booster_id, ilosc, winners, timeout):

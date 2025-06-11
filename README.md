@@ -65,6 +65,7 @@ adresów, aby pokazywać obrazki boosterów w sklepie.
 - `sets.json` – lista setów pobierana z API; aktualizuje się automatycznie.
 - `price.json` – zapisane ceny boosterów w monetach.
 - `data.json` – statystyki zakupów i inne dane pomocnicze.
+- `channels.json` – przypisanie ID kanałów do funkcji bota (np. dropy, sklep, giveaway).
 
 Przed pierwszym uruchomieniem bota pliki te mogą być puste. Bot sam pobierze
 niezbędne dane.

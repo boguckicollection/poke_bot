@@ -9,6 +9,7 @@ SETS_FILE = BASE_DIR / "sets.json"
 PRICE_FILE = BASE_DIR / "price.json"
 DATA_FILE = BASE_DIR / "data.json"
 EVENTS_FILE = BASE_DIR / "events.json"
+CHANNELS_FILE = BASE_DIR / "channels.json"
 
 # Default color for embeds used across the bot
 EMBED_COLOR = discord.Color.dark_teal()
@@ -125,3 +126,16 @@ def active_event_types(now=None):
         if ev.get("start", 0) <= now <= ev.get("end", 0):
             types.add(ev.get("type"))
     return types
+
+
+def load_channels():
+    try:
+        with open(CHANNELS_FILE, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_channels(data):
+    with open(CHANNELS_FILE, "w") as f:
+        json.dump(data, f, indent=4)
