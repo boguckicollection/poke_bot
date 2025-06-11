@@ -871,7 +871,7 @@ class ShopView(View):
 
             embed = create_embed(title="Wybierz erę", color=EMBED_COLOR)
             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
-            await interaction.response.send_message(embed=embed, view=EraView(self), ephemeral=True, file=file)
+            await interaction.response.send_message(embed=embed, view=EraView(self.parent), ephemeral=True, file=file)
 
     class AddItemButton(Button):
         def __init__(self, parent):
