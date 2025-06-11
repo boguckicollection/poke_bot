@@ -341,7 +341,6 @@ def build_achievement_pages(user, all_sets):
     pages = []
     for title, entries in ACHIEVEMENT_GROUPS:
         embed = create_embed(title=title, color=discord.Color.green())
-        embed.set_image(url="attachment://achivment.png")
         for code, target in entries:
             value = 0
             tgt = target
@@ -526,7 +525,6 @@ def build_cart_embed(user_id, message):
     cart = carts.get(user_id, {"boosters": {}, "items": {}})
     total = compute_cart_total(cart)
     embed = create_embed(title="Koszyk", description=message, color=EMBED_COLOR)
-    embed.set_image(url="attachment://koszyk.png")
     embed.add_field(name="Wartość koszyka", value=format_bc(total), inline=False)
     embed.add_field(name="Twoje saldo", value=format_bc(money), inline=False)
     if money < total:
@@ -825,73 +823,55 @@ class ShopView(View):
 
         async def callback(self, interaction: discord.Interaction):
             groups = group_sets_by_language_and_series()
+            eras = next(iter(groups.values())) if groups else {}
+            era_opts = [discord.SelectOption(label=e, value=e) for e in eras]
 
-            lang_options = [discord.SelectOption(label=lang, value=lang) for lang in groups]
-
-            class LanguageView(View):
-                def __init__(self, parent):
+            class EraView(View):
+                def __init__(self, shop_view):
                     super().__init__(timeout=60)
-                    self.parent = parent
+                    self.shop_view = shop_view
 
-                @select(placeholder="Wybierz język", options=lang_options)
-                async def select_lang(self, i2: discord.Interaction, menu_lang: discord.ui.Select):
-                    lang = menu_lang.values[0]
-                    eras = groups.get(lang, {})
-                    era_opts = [discord.SelectOption(label=e, value=e) for e in eras]
+                @select(placeholder="Wybierz erę", options=era_opts)
+                async def select_era(self, i3: discord.Interaction, menu_era: discord.ui.Select):
+                    era = menu_era.values[0]
+                    sets_list = eras.get(era, [])
+                    set_opts = [
+                        discord.SelectOption(
+                            label=s['name'],
+                            value=s['id'],
+                            description=format_bc(booster_price_coins(s['id'])),
+                        )
+                        for s in sets_list[:25]
+                    ]
 
-                    class EraView(View):
+                    class SetView(View):
                         def __init__(self, shop_view):
                             super().__init__(timeout=60)
                             self.shop_view = shop_view
 
-                        @select(placeholder="Wybierz erę", options=era_opts)
-                        async def select_era(self, i3: discord.Interaction, menu_era: discord.ui.Select):
-                            era = menu_era.values[0]
-                            sets_list = eras.get(era, [])
-                            set_opts = [
-                                discord.SelectOption(
-                                    label=s['name'],
-                                    value=s['id'],
-                                    description=format_bc(booster_price_coins(s['id'])),
-                                )
-                                for s in sets_list[:25]
-                            ]
+                        @select(placeholder="Wybierz set", options=set_opts)
+                        async def select_set(self, i4: discord.Interaction, menu_set: discord.ui.Select):
+                            set_id = menu_set.values[0]
+                            set_name = next((s['name'] for s in sets_list if s['id']==set_id), set_id)
 
-                            class SetView(View):
-                                def __init__(self, shop_view):
-                                    super().__init__(timeout=60)
-                                    self.shop_view = shop_view
+                            async def after_qty(i5, qty, shop_view=self.shop_view):
+                                cart = carts.setdefault(shop_view.user_id, {"boosters": {}, "items": {}})
+                                cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
+                                await shop_view.update()
+                                embed = build_cart_embed(shop_view.user_id, f"Dodano {qty}x {set_name}")
+                                file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
+                                await i5.response.send_message(embed=embed, view=QuickBuyView(shop_view), ephemeral=True, files=[file])
 
-                                @select(placeholder="Wybierz set", options=set_opts)
-                                async def select_set(self, i4: discord.Interaction, menu_set: discord.ui.Select):
-                                    set_id = menu_set.values[0]
-                                    set_name = next((s['name'] for s in sets_list if s['id']==set_id), set_id)
+                            modal = QuantityModal(after_qty)
+                            await i4.response.send_modal(modal)
 
-                                    async def after_qty(i5, qty, shop_view=self.shop_view):
-                                        cart = carts.setdefault(shop_view.user_id, {"boosters": {}, "items": {}})
-                                        cart['boosters'][set_id] = cart['boosters'].get(set_id, 0) + qty
-                                        await shop_view.update()
-                                        embed = build_cart_embed(shop_view.user_id, f"Dodano {qty}x {set_name}")
-                                        file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
-                                        await i5.response.send_message(embed=embed, view=QuickBuyView(shop_view), ephemeral=True, files=[file])
-
-                                    modal = QuantityModal(after_qty)
-                                    await i4.response.send_modal(modal)
-
-                            embed = create_embed(title="Wybierz set", color=EMBED_COLOR)
-                            embed.set_image(url="attachment://wybierz_set.png")
-                            file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
-                            await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
-
-                    embed = create_embed(title="Wybierz erę", color=EMBED_COLOR)
-                    embed.set_image(url="attachment://wybierz_set.png")
+                    embed = create_embed(title="Wybierz set", color=EMBED_COLOR)
                     file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
-                    await i2.response.edit_message(embed=embed, view=EraView(self.parent.parent), attachments=[file])
+                    await i3.response.edit_message(embed=embed, view=SetView(self.shop_view), attachments=[file])
 
-            embed = create_embed(title="Wybierz język", color=EMBED_COLOR)
-            embed.set_image(url="attachment://wybierz_set.png")
+            embed = create_embed(title="Wybierz erę", color=EMBED_COLOR)
             file = discord.File(GRAPHIC_DIR / "wybierz_set.png", filename="wybierz_set.png")
-            await interaction.response.send_message(embed=embed, view=LanguageView(self), ephemeral=True, file=file)
+            await interaction.response.send_message(embed=embed, view=EraView(self), ephemeral=True, file=file)
 
     class AddItemButton(Button):
         def __init__(self, parent):
@@ -923,7 +903,6 @@ class ShopView(View):
                     await i2.response.send_modal(modal)
 
             embed = create_embed(title="Wybierz item", color=EMBED_COLOR)
-            embed.set_image(url="attachment://koszyk.png")
             file = discord.File(GRAPHIC_DIR / "koszyk.png", filename="koszyk.png")
             await interaction.response.send_message(embed=embed, view=ItemSelectView(self), ephemeral=True, files=[file])
 
@@ -1130,7 +1109,7 @@ class CollectionMainView(View):
         top5 = sorted(card_values, key=lambda x: x[1], reverse=True)[:5]
 
         embed = create_embed(
-            title="Twoja kolekcja Pokémon",
+            title="Twój profil Pokémon",
             description=(
                 f"Masz **{total_cards} kart** (*{unique_cards} unikalnych*)\n"
                 f"Masz **{total_boosters} boosterów** do otwarcia"
@@ -1238,7 +1217,6 @@ class CollectionMainView(View):
                 description="\n".join(lines),
                 color=EMBED_COLOR
             )
-            embed.set_image(url="attachment://sety.png")
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
 
@@ -1306,7 +1284,6 @@ class CollectionMainView(View):
                 description="Wybierz set z listy poniżej",
                 color=EMBED_COLOR,
             )
-            embed.set_image(url="attachment://sety.png")
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
             await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
     class BoosterOpenButton(Button):
@@ -1374,7 +1351,6 @@ async def build_set_embed(user, sets, set_id):
         ),
         color=EMBED_COLOR
     )
-    embed.set_image(url="attachment://sety.png")
     if top5:
         lines = []
         for idx, (cid, name, price, url) in enumerate(top5):
@@ -1545,7 +1521,7 @@ class CardRevealView(View):
                     if not self.duplicates:
                         self.sell_duplicates.disabled = True
 
-                @discord.ui.button(label="Przejdź do kolekcji", style=discord.ButtonStyle.primary)
+                @discord.ui.button(label="Przejdź do profilu", style=discord.ButtonStyle.primary)
                 async def to_collection(self, i: discord.Interaction, button: Button):
                     users = load_users()
                     user = users[str(i.user.id)]
@@ -1737,7 +1713,7 @@ async def start_cmd(interaction: discord.Interaction):
     save_users(users)
     welcome = (
         "Zbieraj karty Pok\xe9mon, kupuj boostery w komendzie `/sklep` i odbieraj codzienne monety przy pomocy `/daily`.\n"
-        "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj kolekcj\u0119 przez `/kolekcja`.\n"
+        "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj profil przez `/profil`.\n"
         "Reaguj 👍 na dropy innych graczy z podsumowania i zgarniaj 1 BC za każdy głos.\n"
         "Po więcej informacji użyj `/help`.\n\n"
         f"✅ Utworzono konto! Otrzymujesz {format_bc(START_MONEY)}"
@@ -1813,9 +1789,9 @@ async def open_booster(interaction, set_id):
     # always edit the original response to show the first card.
     await view.show_card(interaction, first=True)
 
-# --- KOMENDA KOLEKCJA (z paginacją, przyciski) ---
-@client.tree.command(name="kolekcja", description="Twoja kolekcja, boosterki i karty z setów!")
-async def kolekcja(interaction: discord.Interaction):
+# --- KOMENDA PROFIL (z paginacją, przyciski) ---
+@client.tree.command(name="profil", description="Twój profil, boostery i karty z setów!")
+async def profil(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
     users = load_users()
     all_sets = get_all_sets()
@@ -1984,7 +1960,7 @@ async def help_cmd(interaction: discord.Interaction):
         ("/saldo", "Sprawdź ilość posiadanych monet"),
         ("/daily", "Codzienna nagroda pieniędzy"),
         ("/sklep", "Przeglądaj sklep z boosterami"),
-        ("/kolekcja", "Twoja kolekcja kart"),
+        ("/profil", "Twój profil"),
         ("/otworz", "Otwórz posiadane boostery"),
         ("/osiagniecia", "Lista zdobytych osiągnięć"),
         ("/ranking", "Najlepsze dropy tygodnia"),
@@ -2085,7 +2061,7 @@ async def on_message(message):
         ptcgo_code = match.group(1).upper()
         set_id, set_name = get_set_id_by_ptcgo_code(ptcgo_code)
         if not set_id:
-            await message.channel.send(f"⚠️ Nieznany booster `{ptcgo_code}` – nie został dodany do kolekcji.")
+            await message.channel.send(f"⚠️ Nieznany booster `{ptcgo_code}` – nie został dodany do profilu.")
             return
         found_user = None
         for uid, data in users.items():
@@ -2121,7 +2097,7 @@ async def on_message(message):
                     file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
                     await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
             await message.channel.send(
-                f"✅ Booster `{set_name}` został przydzielony do kolekcji użytkownika **{username}**!",
+                f"✅ Booster `{set_name}` został przydzielony do profilu użytkownika **{username}**!",
                 view=BoosterButtonsView()
             )
         return

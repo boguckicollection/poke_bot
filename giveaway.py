@@ -58,7 +58,6 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
         embed.timestamp = datetime.now(timezone.utc) + timedelta(seconds=czas_s)
         if logo_url:
             embed.set_thumbnail(url=logo_url)
-        embed.set_image(url="attachment://giveawey.png")
         embed.set_footer(text="Kliknij przycisk poniżej, aby wziąć udział!")
 
         view = GiveawayView(booster_id, liczba, zwyciezcy, czas_s)
