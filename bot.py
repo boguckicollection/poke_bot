@@ -711,38 +711,47 @@ class QuickBonusView(View):
         global random_event_active
         random_event_active = False
 
-class DropRatingView(View):
-    def __init__(self, owner_id):
-        super().__init__(timeout=None)
-        self.owner_id = str(owner_id)
+    class DropRatingView(View):
+        def __init__(self, owner_id):
+            super().__init__(timeout=None)
+            self.owner_id = str(owner_id)
+            self.voters: set[str] = set()
+            self.count = 0
 
-    @discord.ui.button(emoji="👍", style=discord.ButtonStyle.secondary)
-    async def vote(self, interaction: discord.Interaction, button: Button):
-        if str(interaction.user.id) == self.owner_id:
-            await interaction.response.send_message("Nie możesz głosować na swój drop!", ephemeral=True)
-            return
-        users = load_users()
-        owner = users.get(self.owner_id)
-        voter_id = str(interaction.user.id)
-        voter = users.get(voter_id)
-        if not owner or not voter:
-            await interaction.response.send_message("Użytkownik nieznany", ephemeral=True)
-            return
-        ensure_user_fields(owner)
-        ensure_user_fields(voter)
-        week, year = current_week_info()
-        wc = owner.get("weekly_community", {})
-        if wc.get("week") != week or wc.get("year") != year:
-            wc = {"week": week, "year": year, "score": 0}
-        wc["score"] = wc.get("score", 0) + 1
-        owner["weekly_community"] = wc
-        voter["money"] = voter.get("money", 0) + 1
-        voter["money_events"] = voter.get("money_events", 0) + 1
-        save_users(users)
-        await interaction.response.send_message(
-            f"Dzięki za reakcję! Otrzymujesz {format_bc(1)}",
-            ephemeral=True,
-        )
+        @discord.ui.button(emoji="👍", label="0", style=discord.ButtonStyle.secondary)
+        async def vote(self, interaction: discord.Interaction, button: Button):
+            if str(interaction.user.id) == self.owner_id:
+                await interaction.response.send_message("Nie możesz głosować na swój drop!", ephemeral=True)
+                return
+            voter_id = str(interaction.user.id)
+            if voter_id in self.voters:
+                await interaction.response.send_message("Już głosowałeś!", ephemeral=True)
+                return
+            users = load_users()
+            owner = users.get(self.owner_id)
+            voter = users.get(voter_id)
+            if not owner or not voter:
+                await interaction.response.send_message("Użytkownik nieznany", ephemeral=True)
+                return
+            ensure_user_fields(owner)
+            ensure_user_fields(voter)
+            week, year = current_week_info()
+            wc = owner.get("weekly_community", {})
+            if wc.get("week") != week or wc.get("year") != year:
+                wc = {"week": week, "year": year, "score": 0}
+            wc["score"] = wc.get("score", 0) + 1
+            owner["weekly_community"] = wc
+            voter["money"] = voter.get("money", 0) + 1
+            voter["money_events"] = voter.get("money_events", 0) + 1
+            save_users(users)
+            self.voters.add(voter_id)
+            self.count += 1
+            button.label = str(self.count)
+            await interaction.message.edit(view=self)
+            await interaction.response.send_message(
+                f"Dzięki za reakcję! Otrzymujesz {format_bc(1)}",
+                ephemeral=True,
+            )
 
 class ShopView(View):
     def __init__(self, user_id):
@@ -846,11 +855,13 @@ class ShopView(View):
                 async def select_era(self, i3: discord.Interaction, menu_era: discord.ui.Select):
                     era = menu_era.values[0]
                     sets_list = eras.get(era, [])
+                    bc_emoji = discord.PartialEmoji(name="bc_coin", id=int(BC_COIN_ID))
                     set_opts = [
                         discord.SelectOption(
                             label=s['name'],
                             value=s['id'],
-                            description=format_bc(booster_price_coins(s['id'])),
+                            description=f"{booster_price_coins(s['id']):.2f} BC",
+                            emoji=bc_emoji,
                         )
                         for s in sets_list[:25]
                     ]
