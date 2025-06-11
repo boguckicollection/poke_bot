@@ -523,17 +523,19 @@ def build_cart_embed(user_id, message):
     cart = carts.get(user_id, {"boosters": {}, "items": {}})
     total = compute_cart_total(cart)
     embed = create_embed(title="Koszyk", description=message, color=EMBED_COLOR)
-    embed.set_thumbnail(url="attachment://koszyk.png")
+    embed.set_image(url="attachment://koszyk.png")
     embed.add_field(name="Wartość koszyka", value=format_bc(total), inline=False)
     embed.add_field(name="Twoje saldo", value=format_bc(money), inline=False)
     if money < total:
         embed.add_field(name="Brakuje środków", value="Nie masz wystarczającej liczby BC!", inline=False)
     return embed
 
-def current_week_info():
-    now = datetime.datetime.now(datetime.UTC)
-    week = now.isocalendar()[1]
-    year = now.isocalendar()[0]
+def current_week_info(dt=None):
+    """Return ISO week and year for the given datetime (defaults to now)."""
+    if dt is None:
+        dt = datetime.datetime.now(datetime.UTC)
+    week = dt.isocalendar()[1]
+    year = dt.isocalendar()[0]
     return week, year
 
 def is_weekend(dt=None):
@@ -541,8 +543,8 @@ def is_weekend(dt=None):
         dt = datetime.datetime.now(datetime.UTC)
     return dt.weekday() >= 5
 
-def update_weekly_best(user, price, name):
-    week, year = current_week_info()
+def update_weekly_best(user, price, name, *, dt=None):
+    week, year = current_week_info(dt)
     best = user.get("weekly_best", {})
     if (
         best.get("week") != week
@@ -925,9 +927,9 @@ class MyClient(discord.Client):
         await self.wait_until_ready()
         processed = None
         while not self.is_closed():
-            week, year = current_week_info()
             now = datetime.datetime.now(datetime.UTC)
-            if now.weekday() == 6 and processed != (week, year):
+            week, year = current_week_info(now - datetime.timedelta(days=1))
+            if now.weekday() == 0 and processed != (week, year):
                 users = load_users()
                 entries = []
                 for uid, data in users.items():
@@ -1001,7 +1003,7 @@ class MyClient(discord.Client):
                     else:
                         embed.description = f"Typ: {ev.get('type')}"
                     file = discord.File(GRAPHIC_DIR / "logo.png", filename="logo.png")
-                    embed.set_thumbnail(url="attachment://logo.png")
+                    embed.set_image(url="attachment://logo.png")
                     channel = self.get_channel(DROP_CHANNEL_ID)
                     if channel:
                         await channel.send(embed=embed, file=file)
@@ -1507,6 +1509,18 @@ class CardRevealView(View):
                 embed=None,
                 view=AfterBoosterView(duplicate_cards),
             )
+            # Send public summary with image of the best card
+            best_card = max(self.cards, key=lambda c: card_price_usd(c) or 0)
+            img = best_card.get("images", {}).get("large") or best_card.get("images", {}).get("small")
+            public_embed = None
+            if img:
+                public_embed = create_embed(title="Najlepsza karta", color=discord.Color.gold())
+                public_embed.set_image(url=img)
+            public_msg = (
+                f"{interaction.user.mention} otworzył booster!\n"
+                f"```{summary}```\n{podsumowanie}"
+            )
+            await interaction.followup.send(content=public_msg, embed=public_embed, ephemeral=False)
 
     async def interaction_check(self, interaction):
         return str(interaction.user.id) == self.user_id
@@ -1758,7 +1772,7 @@ async def saldo(interaction: discord.Interaction):
     embed.add_field(name="Sprzedaż kart", value=format_bc(sales), inline=False)
     embed.add_field(name="Eventy", value=format_bc(events), inline=False)
     embed.add_field(name="Osiągnięcia", value=format_bc(ach), inline=False)
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 # --- KOMENDA DAILY ---
 @client.tree.command(name="daily", description="Odbierz dzienną nagrodę monet")
@@ -1874,24 +1888,6 @@ async def ranking_cmd(interaction: discord.Interaction):
         lines = ["Brak danych"]
     embed = create_embed(title="TOP 3 dropy tygodnia", description="\n".join(lines), color=discord.Color.purple())
     await interaction.response.send_message(embed=embed, ephemeral=True)
-    changed = False
-    notify = []
-    for uid, _, _ in top3:
-        ensure_user_fields(users[uid])
-        if grant_achievement(users[uid], "top3_week"):
-            notify.append(uid)
-            changed = True
-        if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
-            notify.append(uid)
-            changed = True
-    if changed:
-        save_users(users)
-        for nuid in notify:
-            user_obj = interaction.client.get_user(int(nuid))
-            if user_obj:
-                for code in ("top3_week", "all_achievements"):
-                    if code in users[nuid]["achievements"]:
-                        await send_achievement_message(user_obj, code)
 
 # --- KOMENDA HELP ---
 @client.tree.command(name="help", description="Lista komend bota")
