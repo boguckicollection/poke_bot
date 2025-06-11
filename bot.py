@@ -15,6 +15,7 @@ from poke_utils import (
     active_event_types,
     EMBED_COLOR,
     create_embed,
+    load_channels,
 )
 import os
 import json
@@ -392,14 +393,17 @@ STREAK_BONUS = 200
 load_dotenv()
 load_card_cache()
 
+CHANNELS = load_channels()
+
 USERS_FILE = BASE_DIR / "users.json"
 SETS_FILE = BASE_DIR / "sets.json"
 DISCORD_TOKEN = os.environ["BOT_TOKEN"]
 POKETCG_API_KEY = os.environ["POKETCG_API_KEY"]
-DROP_CHANNEL_ID = 1374695570182246440
+DROP_CHANNEL_ID = int(CHANNELS.get("drop", 0)) or 1374695570182246440
 STARTIT_BOT_ID = 572906387382861835
+GIVEAWAY_CHANNEL_ID = int(CHANNELS.get("giveaway", 0))
 # Kanał do ogłaszania aktualizacji sklepu
-SHOP_CHANNEL_ID = DROP_CHANNEL_ID
+SHOP_CHANNEL_ID = int(CHANNELS.get("shop", DROP_CHANNEL_ID)) or DROP_CHANNEL_ID
 
 # Przedmioty dostępne w sklepie
 ITEMS = {
