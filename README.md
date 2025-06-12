@@ -46,6 +46,7 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 - `/daily` – codzienna nagroda pieniędzy (24 h cooldown). Co 7 dni serii otrzymasz bonus 200 BC.
 - `/sklep` – otwiera widok sklepu z boosterami i przedmiotami.
 - `/profil` – wyświetla Twój profil z kartami i boosterami.
+- `/profil_gracza` – pokaż uproszczony profil wskazanego gracza.
 - `/osiagniecia` – lista zdobytych osiągnięć.
 - `/ranking` – najlepsze dropy tygodnia.
 - `/help` – lista wszystkich komend bota.

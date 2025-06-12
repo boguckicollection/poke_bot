@@ -1434,6 +1434,53 @@ async def build_set_embed(user, sets, set_id):
         embed.add_field(name="🎉 Ukończono master set!", value="Masz wszystkie karty z tego setu!", inline=False)
     return embed
 
+
+def build_other_profile_embed(user, all_sets, username: str) -> discord.Embed:
+    """Stwórz uproszczony profil innego gracza."""
+    ensure_user_fields(user)
+    total_usd = sum(c.get("price_usd", 0) for c in user.get("cards", []))
+    total_bc = usd_to_bc(total_usd)
+
+    owned_sets = {}
+    for c in user.get("cards", []):
+        sid = c["id"].split("-")[0]
+        owned_sets.setdefault(sid, set()).add(c["id"])
+    lines = []
+    for sid, cards in owned_sets.items():
+        set_obj = next((s for s in all_sets if s["id"] == sid), None)
+        total = set_obj.get("total", 0) if set_obj else 0
+        percent = (len(cards) / total) * 100 if total else 0
+        name = set_obj.get("name", sid) if set_obj else sid
+        lines.append(f"{name}: {percent:.1f}%")
+    lines.sort()
+
+    best_card = None
+    if user.get("cards"):
+        best_card = max(user["cards"], key=lambda c: c.get("price_usd", 0))
+
+    icons = [BADGE_INFO[a]["emoji"] for a in user.get("achievements", []) if a in BADGE_INFO]
+
+    embed = create_embed(
+        title=f"Profil gracza {username}",
+        description=f"Wartość kolekcji: {total_usd:.2f} USD ({format_bc(total_bc)})",
+        color=EMBED_COLOR,
+    )
+    embed.set_thumbnail(url="attachment://kolekcja.png")
+    if lines:
+        embed.add_field(name="Sety", value="\n".join(lines), inline=False)
+    if icons:
+        embed.add_field(name="Osiągnięcia", value=" ".join(icons), inline=False)
+    if best_card and best_card.get("price_usd", 0) > 0:
+        price_bc = usd_to_bc(best_card.get("price_usd", 0))
+        embed.add_field(
+            name="Najdroższa karta",
+            value=f"{best_card.get('name', best_card['id'])} — {format_bc(price_bc)}",
+            inline=False,
+        )
+        if best_card.get("img_url"):
+            embed.set_image(url=best_card["img_url"])
+    return embed
+
 class CardRevealView(View):
     def __init__(self, cards, user_id, set_id, set_logo_url=None):
         super().__init__(timeout=900)
@@ -1889,9 +1936,33 @@ async def profil(interaction: discord.Interaction):
     file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
 
+
+@client.tree.command(name="profil_gracza", description="Wyświetl profil innego gracza")
+async def profil_gracza(interaction: discord.Interaction, gracz: discord.Member):
+    if interaction.channel_id != SHOP_CHANNEL_ID:
+        await interaction.response.send_message(
+            "⛔ Ta komenda działa tylko na kanale sklepu.", ephemeral=True
+        )
+        return
+    users = load_users()
+    uid = str(gracz.id)
+    if uid not in users:
+        await interaction.response.send_message("📭 Ten użytkownik nie ma konta.", ephemeral=True)
+        return
+    user = ensure_user_fields(users[uid])
+    all_sets = get_all_sets()
+    embed = build_other_profile_embed(user, all_sets, gracz.display_name)
+    file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
+    await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
+
 # --- KOMENDA SALDO ---
 @client.tree.command(name="saldo", description="Sprawdź ilość posiadanych monet")
 async def saldo(interaction: discord.Interaction):
+    if interaction.channel_id != SHOP_CHANNEL_ID:
+        await interaction.response.send_message(
+            "⛔ Ta komenda działa tylko na kanale sklepu.", ephemeral=True
+        )
+        return
     users = load_users()
     uid = str(interaction.user.id)
     if uid in users:
@@ -2008,6 +2079,11 @@ async def achievements_cmd(interaction: discord.Interaction):
 # --- KOMENDA RANKING ---
 @client.tree.command(name="ranking", description="Najlepsze dropy tygodnia")
 async def ranking_cmd(interaction: discord.Interaction):
+    if interaction.channel_id != SHOP_CHANNEL_ID:
+        await interaction.response.send_message(
+            "⛔ Ta komenda działa tylko na kanale sklepu.", ephemeral=True
+        )
+        return
     users = load_users()
     week, year = current_week_info()
     entries = []
