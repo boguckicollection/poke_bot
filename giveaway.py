@@ -1,6 +1,5 @@
 import discord
 import random
-import asyncio
 from datetime import datetime, timezone, timedelta
 from discord.ui import Modal, View, TextInput, Button
 from poke_utils import (
@@ -58,10 +57,12 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
 
         file = discord.File(GRAPHIC_DIR / "giveawey.png", filename="giveawey.png")
 
+        end_time = datetime.now(timezone.utc) + timedelta(seconds=czas_s)
+        end_ts = int(end_time.timestamp())
         desc = (
             f"🎴 Nagroda: {liczba}x **{set_name}** booster\n"
             f"👑 Zwycięzcy: {zwyciezcy}\n"
-            f"⏳ Zakończenie za: {self.czas.value}"
+            f"⏳ Zakończenie <t:{end_ts}:R>"
         )
         if title_msg:
             desc = f"**{title_msg}**\n" + desc
@@ -70,12 +71,13 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
             description=desc,
             color=EMBED_COLOR,
         )
-        embed.timestamp = datetime.now(timezone.utc) + timedelta(seconds=czas_s)
+        embed.timestamp = end_time
         if logo_url:
             embed.set_thumbnail(url=logo_url)
         embed.set_footer(text="Kliknij przycisk poniżej, aby wziąć udział!")
 
         view = GiveawayView(booster_id, liczba, zwyciezcy, czas_s, title_msg)
+        view.end_time = end_time
 
         target_channel = (
             interaction.guild.get_channel(GIVEAWAY_CHANNEL_ID)
@@ -90,7 +92,7 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
 
         message = await target_channel.send(embed=embed, view=view, file=file)
         view.message = message
-        asyncio.create_task(view.update_embed_loop())
+        await view.update_embed()
 
         if warn_missing:
             await interaction.response.send_message(
@@ -109,17 +111,28 @@ class GiveawayView(View):
     def __init__(self, booster_id, ilosc, winners, timeout, title_msg=""):
         super().__init__(timeout=timeout)
         self.entries = set()
+        self.clicks = 0
         self.booster_id = booster_id
         self.ilosc = ilosc
         self.winners = winners
         self.message = None
         self.title_msg = title_msg
+        self.end_time = datetime.now(timezone.utc) + timedelta(seconds=timeout)
 
     
     @discord.ui.button(label="🎉 Weź udział", style=discord.ButtonStyle.primary)
     async def join(self, interaction: discord.Interaction, button: Button):
+        self.clicks += 1
+        if interaction.user.id in self.entries:
+            await interaction.response.send_message(
+                "⚠️ Już bierzesz udział w giveaway!", ephemeral=True
+            )
+            return
         self.entries.add(interaction.user.id)
-        await interaction.response.send_message("✅ Zapisano do giveaway!", ephemeral=True)
+        await self.update_embed()
+        await interaction.response.send_message(
+            "✅ Zapisano do giveaway!", ephemeral=True
+        )
 
     async def on_timeout(self):
         if not self.entries:
@@ -156,46 +169,26 @@ class GiveawayView(View):
                     )
                 except:
                     pass  # użytkownik może mieć zablokowane DM
-    async def update_embed_loop(self):
-        while True:
-            if not self.message or not self.message.embeds:
-                break
-
-            remaining = int((self.message.embeds[0].timestamp - datetime.now(timezone.utc)).total_seconds())
-            if remaining <= 0:
-                break
-
-            await self.update_embed()
-            await asyncio.sleep(1)
 
     async def update_embed(self):
         if not self.message or not self.message.embeds:
             return
 
-        remaining_seconds = int((self.message.embeds[0].timestamp - datetime.now(timezone.utc)).total_seconds())
-        days, rem = divmod(remaining_seconds, 86400)
-        hours, rem = divmod(rem, 3600)
-        minutes, seconds = divmod(rem, 60)
-        time_parts = []
-        if days:
-            time_parts.append(f"{days}d")
-        if hours or days:
-            time_parts.append(f"{hours}h")
-        time_parts.append(f"{minutes}m {seconds}s")
-        remaining_str = " ".join(time_parts)
-
+        end_ts = int(self.end_time.timestamp())
         names = [f"<@{uid}>" for uid in self.entries]
 
         embed = self.message.embeds[0]
         desc = (
             f"🎴 Nagroda: {self.ilosc}x booster z zestawu `{self.booster_id}`\n"
             f"👑 Zwycięzcy: {self.winners}\n"
-            f"⏳ Zakończenie za: {remaining_str}\n\n"
-            f"👥 Uczestnicy ({len(self.entries)}):\n" + (", ".join(names) if names else "Brak")
+            f"⏳ Zakończenie <t:{end_ts}:R>\n\n"
+            f"👥 Uczestnicy ({len(self.entries)}):\n" + (", ".join(names) if names else "Brak") +
+            f"\n\n🔢 Kliknięcia: {self.clicks}"
         )
         if self.title_msg:
             desc = f"**{self.title_msg}**\n" + desc
         embed.description = desc
+        embed.timestamp = self.end_time
 
         try:
             await self.message.edit(embed=embed, view=self)
