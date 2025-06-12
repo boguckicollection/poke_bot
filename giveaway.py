@@ -28,6 +28,7 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
     liczba_boosterow = TextInput(label="Ilość boosterów", placeholder="np. 5", required=True)
     liczba_zwyciezcow = TextInput(label="Ilość zwycięzców", placeholder="np. 1", required=True)
     booster_id = TextInput(label="ID zestawu (np. sv1)", placeholder="np. sv1", required=True)
+    tytul = TextInput(label="Tytuł/okazja (opc.)", placeholder="np. 1000 członków", required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
         if not interaction.user.guild_permissions.administrator:
@@ -53,16 +54,20 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
             return
 
         logo_url = matched_set.get("images", {}).get("logo") if matched_set else None
+        title_msg = self.tytul.value.strip() if self.tytul.value else ""
 
         file = discord.File(GRAPHIC_DIR / "giveawey.png", filename="giveawey.png")
 
+        desc = (
+            f"🎴 Nagroda: {liczba}x **{set_name}** booster\n"
+            f"👑 Zwycięzcy: {zwyciezcy}\n"
+            f"⏳ Zakończenie za: {self.czas.value}"
+        )
+        if title_msg:
+            desc = f"**{title_msg}**\n" + desc
         embed = create_embed(
             title="Giveaway",
-            description=(
-                f"🎴 Nagroda: {liczba}x **{set_name}** booster\n"
-                f"👑 Zwycięzcy: {zwyciezcy}\n"
-                f"⏳ Zakończenie za: {self.czas.value}"
-            ),
+            description=desc,
             color=EMBED_COLOR,
         )
         embed.timestamp = datetime.now(timezone.utc) + timedelta(seconds=czas_s)
@@ -70,7 +75,7 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
             embed.set_thumbnail(url=logo_url)
         embed.set_footer(text="Kliknij przycisk poniżej, aby wziąć udział!")
 
-        view = GiveawayView(booster_id, liczba, zwyciezcy, czas_s)
+        view = GiveawayView(booster_id, liczba, zwyciezcy, czas_s, title_msg)
 
         target_channel = (
             interaction.guild.get_channel(GIVEAWAY_CHANNEL_ID)
@@ -101,13 +106,14 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
             await interaction.response.send_message("✅ Giveaway został utworzony!", ephemeral=True)
 
 class GiveawayView(View):
-    def __init__(self, booster_id, ilosc, winners, timeout):
+    def __init__(self, booster_id, ilosc, winners, timeout, title_msg=""):
         super().__init__(timeout=timeout)
         self.entries = set()
         self.booster_id = booster_id
         self.ilosc = ilosc
         self.winners = winners
         self.message = None
+        self.title_msg = title_msg
 
     
     @discord.ui.button(label="🎉 Weź udział", style=discord.ButtonStyle.primary)
@@ -181,12 +187,15 @@ class GiveawayView(View):
         names = [f"<@{uid}>" for uid in self.entries]
 
         embed = self.message.embeds[0]
-        embed.description = (
+        desc = (
             f"🎴 Nagroda: {self.ilosc}x booster z zestawu `{self.booster_id}`\n"
             f"👑 Zwycięzcy: {self.winners}\n"
             f"⏳ Zakończenie za: {remaining_str}\n\n"
             f"👥 Uczestnicy ({len(self.entries)}):\n" + (", ".join(names) if names else "Brak")
         )
+        if self.title_msg:
+            desc = f"**{self.title_msg}**\n" + desc
+        embed.description = desc
 
         try:
             await self.message.edit(embed=embed, view=self)
