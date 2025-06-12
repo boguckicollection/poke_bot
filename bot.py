@@ -305,6 +305,86 @@ async def send_achievement_message(interaction_or_user, code: str):
             pass
 
 
+async def create_account_and_welcome(member_or_interaction):
+    """Stwórz konto użytkownika i wyślij powitanie."""
+    if isinstance(member_or_interaction, discord.Interaction):
+        member = member_or_interaction.user
+    else:
+        member = member_or_interaction
+
+    users = load_users()
+    uid = str(member.id)
+    if uid in users:
+        if isinstance(member_or_interaction, discord.Interaction):
+            await member_or_interaction.response.send_message(
+                "Masz już konto!", ephemeral=True
+            )
+        return
+
+    users[uid] = {
+        "username": member.name,
+        "boosters": [],
+        "cards": [],
+        "rare_boost": 0,
+        "double_daily_until": 0,
+        "streak_freeze": 0,
+        "boosters_opened": 0,
+        "money": START_MONEY,
+        "money_sales": 0,
+        "money_events": START_MONEY,
+        "money_achievements": 0,
+        "last_daily": 0,
+        "daily_streak": 0,
+        "weekly_best": {"week": 0, "year": 0, "price": 0},
+        "achievements": [],
+        "badges": [],
+        "created_at": int(datetime.datetime.now(datetime.UTC).timestamp()),
+    }
+    users[uid]["achievements"].append("account_created")
+    reward = ACHIEVEMENT_REWARDS.get("account_created", 0)
+    users[uid]["money"] += reward
+    users[uid]["money_achievements"] += reward
+    save_users(users)
+
+    welcome = (
+        "Zbieraj karty Pok\xe9mon, kupuj boostery w komendzie `/sklep` i odbieraj codzienne monety przy pomocy `/daily`.\n"
+        "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj profil przez `/profil`.\n"
+        "Reaguj 👍 na dropy innych graczy z podsumowania i zgarniaj 1 BC za każdy głos.\n"
+        "Po więcej informacji użyj `/help`.\n\n"
+        f"✅ Utworzono konto! Otrzymujesz {format_bc(START_MONEY)}"
+    )
+    embed = create_embed(
+        title="Witaj w Pok\xe9 Booster Bot!",
+        description=welcome,
+        color=discord.Color.green(),
+    )
+    embed.set_image(url="attachment://CardCollector.png")
+    file = discord.File(GRAPHIC_DIR / "CardCollector.png", filename="CardCollector.png")
+
+    if isinstance(member_or_interaction, discord.Interaction):
+        await member_or_interaction.response.send_message(
+            embed=embed, ephemeral=True, file=file
+        )
+        send_target = member_or_interaction
+        announce_channel = member_or_interaction.channel
+    else:
+        try:
+            await member.send(embed=embed, file=file)
+        except Exception:
+            pass
+        send_target = member
+        announce_channel = client.get_channel(DROP_CHANNEL_ID)
+
+    await send_achievement_message(send_target, "account_created")
+    try:
+        if announce_channel:
+            await announce_channel.send(
+                f"🎉 {member.mention} dołączył do gry! Witamy!"
+            )
+    except Exception:
+        pass
+
+
 def grant_achievement(user: dict, code: str) -> bool:
     """Dodaj osiągnięcie i przyznaj nagrodę. Zwraca True gdy nowe."""
     if code in user.setdefault("achievements", []):
@@ -443,6 +523,9 @@ COIN_IMAGE_PATH = GRAPHIC_DIR / "coin.png"
 BC_COIN_ID = os.environ.get("BC_COIN_ID", "1381617796282319010")
 COIN_EMOJI = f"<:bc_coin:{BC_COIN_ID}>"
 FUN_EMOJIS = ["✨", "🎉", "🎲", "🔥", "💎", "🎁", "🌟", "🚀", "🃏"]
+
+# Rola uprawniająca do gry w TCG (z .env lub konfiguracji)
+TCG_ROLE_ID = int(os.getenv("TCG_ROLE_ID", 0))
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
@@ -1131,6 +1214,15 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
+@client.event
+async def on_member_update(before: discord.Member, after: discord.Member):
+    if (
+        TCG_ROLE_ID
+        and TCG_ROLE_ID not in [r.id for r in before.roles]
+        and any(r.id == TCG_ROLE_ID for r in after.roles)
+    ):
+        await create_account_and_welcome(after)
+
 class CollectionMainView(View):
     def __init__(self, user, boosters_counter, all_sets):
         super().__init__(timeout=180)
@@ -1805,57 +1897,7 @@ class AchievementsView(View):
 # --- KOMENDA START ---
 @client.tree.command(name="start", description="Utwórz konto w grze")
 async def start_cmd(interaction: discord.Interaction):
-    users = load_users()
-    uid = str(interaction.user.id)
-    if uid in users:
-        await interaction.response.send_message("Masz już konto!", ephemeral=True)
-        return
-    users[uid] = {
-        "username": interaction.user.name,
-        "boosters": [],
-        "cards": [],
-        "rare_boost": 0,
-        "double_daily_until": 0,
-        "streak_freeze": 0,
-        "boosters_opened": 0,
-        "money": START_MONEY,
-        "money_sales": 0,
-        "money_events": START_MONEY,
-        "money_achievements": 0,
-        "last_daily": 0,
-        "daily_streak": 0,
-        "weekly_best": {"week": 0, "year": 0, "price": 0},
-        "achievements": [],
-        "badges": [],
-        "created_at": int(datetime.datetime.now(datetime.UTC).timestamp()),
-    }
-    users[uid]["achievements"].append("account_created")
-    reward = ACHIEVEMENT_REWARDS.get("account_created", 0)
-    users[uid]["money"] += reward
-    users[uid]["money_achievements"] += reward
-    save_users(users)
-    welcome = (
-        "Zbieraj karty Pok\xe9mon, kupuj boostery w komendzie `/sklep` i odbieraj codzienne monety przy pomocy `/daily`.\n"
-        "Otw\xf3rz je komend\u0105 `/otworz` i sprawdzaj profil przez `/profil`.\n"
-        "Reaguj 👍 na dropy innych graczy z podsumowania i zgarniaj 1 BC za każdy głos.\n"
-        "Po więcej informacji użyj `/help`.\n\n"
-        f"✅ Utworzono konto! Otrzymujesz {format_bc(START_MONEY)}"
-    )
-    embed = create_embed(
-        title="Witaj w Pok\xe9 Booster Bot!",
-        description=welcome,
-        color=discord.Color.green()
-    )
-    embed.set_image(url="attachment://CardCollector.png")
-    file = discord.File(GRAPHIC_DIR / "CardCollector.png", filename="CardCollector.png")
-    await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
-    await send_achievement_message(interaction, "account_created")
-    try:
-        await interaction.channel.send(
-            f"🎉 {interaction.user.mention} dołączył do gry! Witamy!"
-        )
-    except Exception:
-        pass
+    await create_account_and_welcome(interaction)
 
 # --- KOMENDA Otwórz ---
 @client.tree.command(name="otworz", description="Otwórz booster i zobacz karty jedna po drugiej!")
