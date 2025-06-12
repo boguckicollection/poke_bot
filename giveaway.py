@@ -71,11 +71,28 @@ class GiveawayModal(Modal, title="🎉 Nowy Giveaway"):
         embed.set_footer(text="Kliknij przycisk poniżej, aby wziąć udział!")
 
         view = GiveawayView(booster_id, liczba, zwyciezcy, czas_s)
-        target_channel = interaction.guild.get_channel(GIVEAWAY_CHANNEL_ID) if GIVEAWAY_CHANNEL_ID else interaction.channel
+
+        target_channel = (
+            interaction.guild.get_channel(GIVEAWAY_CHANNEL_ID)
+            if GIVEAWAY_CHANNEL_ID
+            else interaction.channel
+        )
+        warn_missing = False
+        if target_channel is None:
+            # Fallback to the channel where the command was used
+            target_channel = interaction.channel
+            warn_missing = True
+
         message = await target_channel.send(embed=embed, view=view, file=file)
         view.message = message
         asyncio.create_task(view.update_embed_loop())
-        if target_channel != interaction.channel:
+
+        if warn_missing:
+            await interaction.response.send_message(
+                "⚠️ Nie znaleziono kanału giveaway. Ogłoszenie zostało wysłane tutaj.",
+                ephemeral=True,
+            )
+        elif target_channel != interaction.channel:
             await interaction.response.send_message(
                 f"✅ Giveaway został utworzony na <#{GIVEAWAY_CHANNEL_ID}>!",
                 ephemeral=True,
@@ -100,6 +117,11 @@ class GiveawayView(View):
 
     async def on_timeout(self):
         if not self.entries:
+            if self.message:
+                try:
+                    await self.message.channel.send("📭 Giveaway zakończył się bez uczestników.")
+                except Exception:
+                    pass
             return
         chosen = random.sample(list(self.entries), min(self.winners, len(self.entries)))
         users = load_users()
