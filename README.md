@@ -51,6 +51,7 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 - `/help` – lista wszystkich komend bota.
 - `/otworz` – otwórz posiadane boostery i odsłaniaj karty jedna po drugiej.
 - `/giveaway` – stwórz losowanie boosterów (administrator).
+- `/nagroda` – przyznaj booster lub monety wybranemu graczowi (administrator).
 
 Poniżej przykład grafiki jednego z setów dostępnych w sklepie:
 
