@@ -10,6 +10,7 @@ from poke_utils import (
     EMBED_COLOR,
     create_embed,
     load_channels,
+    ensure_user_fields,
 )
 from pathlib import Path
 
@@ -104,8 +105,16 @@ class GiveawayView(View):
         users = load_users()
         for uid in chosen:
             uid_str = str(uid)
-            if uid_str in users:
-                users[uid_str]["boosters"].extend([self.booster_id] * self.ilosc)
+            member = None
+            if self.message and self.message.guild:
+                try:
+                    member = await self.message.guild.fetch_member(uid)
+                except Exception:
+                    member = None
+            user = users.get(uid_str, {"username": member.name if member else str(uid)})
+            ensure_user_fields(user)
+            user["boosters"].extend([self.booster_id] * self.ilosc)
+            users[uid_str] = user
         save_users(users)
         mentions = ", ".join(f"<@{uid}>" for uid in chosen)
         await self.message.channel.send(f"🏆 Gratulacje! Giveaway wygrywają: {mentions}")
