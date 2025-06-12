@@ -844,6 +844,7 @@ class ShopView(View):
         super().__init__(timeout=180)
         self.user_id = str(user_id)
         self.message = None
+        self.finalized = False
         self.add_item(self.AddBoosterButton(self))
         self.add_item(self.AddItemButton(self))
         self.add_item(self.ClearButton(self))
