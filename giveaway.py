@@ -141,6 +141,7 @@ class GiveawayView(View):
                     await self.message.channel.send("📭 Giveaway zakończył się bez uczestników.")
                 except Exception:
                     pass
+                await self.finalize_embed()
             return
         chosen = random.sample(list(self.entries), min(self.winners, len(self.entries)))
         users = load_users()
@@ -170,6 +171,8 @@ class GiveawayView(View):
                 except:
                     pass  # użytkownik może mieć zablokowane DM
 
+        await self.finalize_embed()
+
     async def update_embed(self):
         if not self.message or not self.message.embeds:
             return
@@ -194,6 +197,33 @@ class GiveawayView(View):
             await self.message.edit(embed=embed, view=self)
         except Exception as e:
             print(f"❌ Błąd aktualizacji embeda: {e}")
+
+    async def finalize_embed(self):
+        if not self.message or not self.message.embeds:
+            return
+
+        # Disable all buttons when giveaway ends
+        for child in self.children:
+            child.disabled = True
+
+        names = [f"<@{uid}>" for uid in self.entries]
+        embed = self.message.embeds[0]
+        desc = (
+            f"🎴 Nagroda: {self.ilosc}x booster z zestawu `{self.booster_id}`\n"
+            f"👑 Zwycięzcy: {self.winners}\n"
+            "⏳ Giveaway zakończony!\n\n"
+            f"👥 Uczestnicy ({len(self.entries)}):\n" + (", ".join(names) if names else "Brak") +
+            f"\n\n🔢 Kliknięcia: {self.clicks}"
+        )
+        if self.title_msg:
+            desc = f"**{self.title_msg}**\n" + desc
+        embed.description = desc
+        embed.timestamp = datetime.now(timezone.utc)
+
+        try:
+            await self.message.edit(embed=embed, view=self)
+        except Exception as e:
+            print(f"❌ Błąd aktualizacji embeda po zakończeniu: {e}")
 
 
 #def setup_giveaway_commands(tree):
