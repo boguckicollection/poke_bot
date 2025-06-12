@@ -167,13 +167,24 @@ class GiveawayView(View):
             return
 
         remaining_seconds = int((self.message.embeds[0].timestamp - datetime.now(timezone.utc)).total_seconds())
+        days, rem = divmod(remaining_seconds, 86400)
+        hours, rem = divmod(rem, 3600)
+        minutes, seconds = divmod(rem, 60)
+        time_parts = []
+        if days:
+            time_parts.append(f"{days}d")
+        if hours or days:
+            time_parts.append(f"{hours}h")
+        time_parts.append(f"{minutes}m {seconds}s")
+        remaining_str = " ".join(time_parts)
+
         names = [f"<@{uid}>" for uid in self.entries]
 
         embed = self.message.embeds[0]
         embed.description = (
             f"🎴 Nagroda: {self.ilosc}x booster z zestawu `{self.booster_id}`\n"
             f"👑 Zwycięzcy: {self.winners}\n"
-            f"⏳ Zakończenie za: {remaining_seconds // 60}m {remaining_seconds % 60}s\n\n"
+            f"⏳ Zakończenie za: {remaining_str}\n\n"
             f"👥 Uczestnicy ({len(self.entries)}):\n" + (", ".join(names) if names else "Brak")
         )
 

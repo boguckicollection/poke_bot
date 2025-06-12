@@ -1641,7 +1641,13 @@ class CardRevealView(View):
             public_msg = (
                 f"{interaction.user.display_name} otworzył {booster_name} o wartości {format_bc(total_bc)}"
             )
-            await interaction.followup.send(content=public_msg, embed=public_embed, view=QuickBonusView.DropRatingView(self.user_id), ephemeral=False)
+            target_channel = None
+            if interaction.guild:
+                target_channel = interaction.guild.get_channel(SHOP_CHANNEL_ID)
+            if target_channel:
+                await target_channel.send(content=public_msg, embed=public_embed, view=QuickBonusView.DropRatingView(self.user_id))
+            else:
+                await interaction.followup.send(content=public_msg, embed=public_embed, view=QuickBonusView.DropRatingView(self.user_id), ephemeral=False)
         self.stop()
 
     async def interaction_check(self, interaction):
@@ -2415,13 +2421,6 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
     rares = [c for c in result if c.get("rarity") not in ["Common", "Uncommon"]]
     random.shuffle(commons)
     cards_result = commons + rares
-    unique = []
-    seen = set()
-    for card in cards_result:
-        cid = card.get("id")
-        if cid not in seen:
-            unique.append(card)
-            seen.add(cid)
-    return unique[:10]
+    return cards_result[:10]
 
 client.run(os.environ["BOT_TOKEN"])
