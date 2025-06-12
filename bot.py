@@ -366,11 +366,12 @@ def build_achievement_pages(user, all_sets):
                 tgt = target
             elif code in {"account_created", "top3_week", "all_achievements"}:
                 value = 1 if code in ach else 0
-            bar = progress_bar(value, tgt)
+            display_val = min(value, tgt)
+            bar = progress_bar(display_val, tgt)
             status = "✅" if code in ach else ""
             info = BADGE_INFO.get(code)
             name = f"{info['emoji']} {info['name']}" if info else ACHIEVEMENTS_INFO.get(code, code)
-            embed.add_field(name=name, value=f"{bar} {value}/{tgt} {status}", inline=False)
+            embed.add_field(name=name, value=f"{bar} {display_val}/{tgt} {status}", inline=False)
         rewards = []
         for code, _ in entries:
             reward = ACHIEVEMENT_REWARDS.get(code)
@@ -765,6 +766,9 @@ class ShopView(View):
         self.add_item(self.ClearButton(self))
 
     async def finalize(self, interaction: discord.Interaction):
+        if self.finalized:
+            return
+        self.finalized = True
         users = load_users()
         uid = self.user_id
         if uid not in users:
@@ -1441,6 +1445,7 @@ class CardRevealView(View):
         self.set_logo_url = set_logo_url
         self.interaction = None
         self.message = None
+        self.finalized = False
 
     async def on_timeout(self):
         if self.interaction:
@@ -1450,6 +1455,9 @@ class CardRevealView(View):
                 pass
 
     async def finalize(self, interaction: discord.Interaction):
+        if self.finalized:
+            return
+        self.finalized = True
         users = load_users()
         uid = str(self.user_id)
         if uid in users:
@@ -1634,6 +1642,7 @@ class CardRevealView(View):
                 f"{interaction.user.display_name} otworzył {booster_name} o wartości {format_bc(total_bc)}"
             )
             await interaction.followup.send(content=public_msg, embed=public_embed, view=QuickBonusView.DropRatingView(self.user_id), ephemeral=False)
+        self.stop()
 
     async def interaction_check(self, interaction):
         return str(interaction.user.id) == self.user_id
@@ -2088,12 +2097,117 @@ class EventTypeView(View):
         await interaction.response.send_modal(EventModal(event_type))
 
 
+class RewardSetupView(View):
+    def __init__(self):
+        super().__init__(timeout=60)
+        self.target_user: discord.Member | None = None
+        self.reward_type = "booster"
+        self.booster_id: str | None = None
+
+        self.user_select = discord.ui.UserSelect(placeholder="Wybierz użytkownika")
+        self.user_select.callback = self.on_user_select
+        self.add_item(self.user_select)
+
+        type_options = [
+            discord.SelectOption(label="Booster", value="booster"),
+            discord.SelectOption(label="Monety", value="coins"),
+        ]
+        self.type_select = discord.ui.Select(placeholder="Typ nagrody", options=type_options)
+        self.type_select.callback = self.on_type_select
+        self.add_item(self.type_select)
+
+        booster_options = [
+            discord.SelectOption(label=s["name"], value=s["id"])
+            for s in get_all_sets()[:25]
+        ]
+        self.booster_select = discord.ui.Select(placeholder="Wybierz booster", options=booster_options)
+        self.booster_select.callback = self.on_booster_select
+        self.add_item(self.booster_select)
+
+        self.next_button = discord.ui.Button(label="Dalej", style=discord.ButtonStyle.success)
+        self.next_button.callback = self.proceed
+        self.add_item(self.next_button)
+
+    async def on_user_select(self, interaction: discord.Interaction):
+        self.target_user = self.user_select.values[0]
+        await interaction.response.defer(ephemeral=True)
+
+    async def on_type_select(self, interaction: discord.Interaction):
+        self.reward_type = self.type_select.values[0]
+        self.booster_select.disabled = self.reward_type != "booster"
+        await interaction.response.edit_message(view=self)
+
+    async def on_booster_select(self, interaction: discord.Interaction):
+        self.booster_id = self.booster_select.values[0]
+        await interaction.response.defer(ephemeral=True)
+
+    async def proceed(self, interaction: discord.Interaction):
+        if not self.target_user:
+            await interaction.response.send_message("Wybierz użytkownika", ephemeral=True)
+            return
+        if self.reward_type == "booster" and not self.booster_id:
+            await interaction.response.send_message("Wybierz booster", ephemeral=True)
+            return
+        await interaction.response.send_modal(RewardModal(self.target_user, self.reward_type, self.booster_id))
+
+
+class RewardModal(Modal, title="🎁 Nagroda"):
+    def __init__(self, user: discord.Member, reward_type: str, booster_id: str | None):
+        super().__init__()
+        self.user = user
+        self.reward_type = reward_type
+        self.booster_id = booster_id
+        self.amount = TextInput(label="Ilość", default="1")
+        self.message = TextInput(label="Wiadomość", style=discord.TextStyle.long, required=False)
+        self.add_item(self.amount)
+        self.add_item(self.message)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("🚫 Tylko administrator może przyznawać nagrody!", ephemeral=True)
+            return
+        try:
+            qty = max(1, int(self.amount.value))
+        except ValueError:
+            qty = 1
+        users = load_users()
+        uid = str(self.user.id)
+        user = users.get(uid, {"username": self.user.name})
+        ensure_user_fields(user)
+        if self.reward_type == "booster" and self.booster_id:
+            user["boosters"].extend([self.booster_id] * qty)
+            reward_desc = f"{qty}x booster `{self.booster_id}`"
+        else:
+            user["money"] = user.get("money", 0) + qty
+            user["money_events"] = user.get("money_events", 0) + qty
+            reward_desc = format_bc(qty)
+        users[uid] = user
+        save_users(users)
+        note = self.message.value.strip()
+        dm = f"🎁 Otrzymujesz {reward_desc}!"
+        if note:
+            dm += f"\n{note}"
+        try:
+            await self.user.send(dm)
+        except Exception:
+            pass
+        await interaction.response.send_message(f"✅ Dodano {reward_desc} dla {self.user.mention}", ephemeral=True)
+
+
 @client.tree.command(name="event", description="Utwórz nowy event")
 async def event_command(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message("🚫 Tylko administrator może tworzyć event!", ephemeral=True)
         return
     await interaction.response.send_message("Wybierz typ eventu:", view=EventTypeView(), ephemeral=True)
+
+
+@client.tree.command(name="nagroda", description="Przyznaj booster lub monety użytkownikowi")
+async def reward_command(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("🚫 Tylko administrator może przyznawać nagrody!", ephemeral=True)
+        return
+    await interaction.response.send_message("Wybierz użytkownika i nagrodę:", view=RewardSetupView(), ephemeral=True)
 
 # --- Integracja StartIT booster + boost ---
 @client.event
