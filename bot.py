@@ -668,10 +668,27 @@ def booster_image_url(set_id: str) -> str:
 def build_shop_embed(user_id):
     sets = get_all_sets()
     purchases = load_data()
+    now = time.time()
+    active = [ev for ev in load_events() if ev.get("start", 0) <= now <= ev.get("end", 0)]
+    event_lines = []
+    for ev in active:
+        if ev.get("type") == "coins":
+            desc = "Podwójne monety - nagrody x2"
+        elif ev.get("type") == "drop":
+            desc = "Lepszy drop - większa szansa na rzadkie karty"
+        else:
+            desc = ev.get("type", "")
+        end_dt = datetime.datetime.fromtimestamp(ev.get("end", now), datetime.timezone.utc)
+        until = end_dt.strftime("%Y-%m-%d %H:%M UTC")
+        event_lines.append(f"{desc} (do {until})")
+    event_info = ""
+    if event_lines:
+        event_info = "**Aktualne eventy:**\n" + "\n".join(event_lines) + "\n\n"
     embed = create_embed(
         title="Sklep",
         description=(
-            "W sklepie znajdziesz boostery i itemy. "
+            event_info
+            + "W sklepie znajdziesz boostery i itemy. "
             "Użyj przycisków poniżej, aby dodać produkty do koszyka."
         ),
         color=EMBED_COLOR,
@@ -2217,6 +2234,34 @@ class EventModal(Modal, title="🗓️ Nowy Event"):
         events.append({"start": st, "end": et, "type": self.event_type, "announced": False})
         save_events(events)
         await interaction.response.send_message("✅ Event utworzony!", ephemeral=True)
+        now_ts = time.time()
+        if st <= now_ts <= et:
+            channel = interaction.client.get_channel(SHOP_CHANNEL_ID)
+            if channel:
+                if self.event_type == "coins":
+                    desc = "Event podwójnych monet - wszystkie nagrody x2"
+                elif self.event_type == "drop":
+                    desc = "Event lepszego dropu - większa szansa na rzadkie karty"
+                else:
+                    desc = f"Typ: {self.event_type}"
+                end_dt = datetime.datetime.fromtimestamp(et, datetime.timezone.utc)
+                remaining = end_dt - datetime.datetime.now(datetime.timezone.utc)
+                secs = int(remaining.total_seconds())
+                days, secs = divmod(secs, 86400)
+                hours, secs = divmod(secs, 3600)
+                minutes, _ = divmod(secs, 60)
+                parts = []
+                if days:
+                    parts.append(f"{days}d")
+                if hours:
+                    parts.append(f"{hours}h")
+                if minutes:
+                    parts.append(f"{minutes}m")
+                duration = " ".join(parts) or "<1m"
+                embed = create_embed(title="Event aktywny!", description=desc, color=discord.Color.orange())
+                embed.add_field(name="Koniec za", value=duration, inline=False)
+                file = discord.File(GRAPHIC_DIR / "logo.png", filename="logo.png")
+                await channel.send(embed=embed, file=file)
 
 
 class EventTypeView(View):
