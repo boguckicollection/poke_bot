@@ -1209,7 +1209,7 @@ class MyClient(discord.Client):
                         embed.description = f"Typ: {ev.get('type')}"
                     file = discord.File(GRAPHIC_DIR / "logo.png", filename="logo.png")
                     embed.set_image(url="attachment://logo.png")
-                    channel = self.get_channel(DROP_CHANNEL_ID)
+                    channel = self.get_channel(SHOP_CHANNEL_ID)
                     if channel:
                         await channel.send(embed=embed, file=file)
                     ev["announced"] = True
