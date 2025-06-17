@@ -1197,9 +1197,9 @@ class MyClient(discord.Client):
                         await channel.send(embed=embed, file=file)
                     ev["announced"] = True
                     changed = True
-        if changed:
-            await asyncio.to_thread(save_events, events)
-        await asyncio.sleep(60)
+            if changed:
+                await asyncio.to_thread(save_events, events)
+            await asyncio.sleep(60)
 
     async def booster_queue_worker(self):
         await self.wait_until_ready()
