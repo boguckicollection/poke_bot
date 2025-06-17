@@ -526,6 +526,8 @@ FUN_EMOJIS = ["✨", "🎉", "🎲", "🔥", "💎", "🎁", "🌟", "🚀", "�
 
 # Rola uprawniająca do gry w TCG (z .env lub konfiguracji)
 TCG_ROLE_ID = int(os.getenv("TCG_ROLE_ID", 0))
+# Rola do powiadomień o losowych eventach
+EVENT_ROLE_ID = int(os.getenv("EVENT_ROLE_ID", 0))
 
 # Pamięć koszyków użytkowników {uid: {"boosters": {set_id: qty}, "items": {item: qty}}}
 carts = {}
@@ -760,7 +762,8 @@ class QuickBuyView(View):
 
 class QuickBonusView(View):
     def __init__(self, amount=None, booster_id=None):
-        super().__init__(timeout=30)
+        # Event is active for 5 minutes
+        super().__init__(timeout=300)
         self.claimed = False
         self.amount = amount
         self.booster_id = booster_id
@@ -1528,7 +1531,7 @@ async def build_set_embed(user, sets, set_id):
     return embed
 
 
-def build_other_profile_embed(user, all_sets, username: str) -> discord.Embed:
+def build_other_profile_embed(user, all_sets, username: str, avatar_url: str | None = None) -> discord.Embed:
     """Stwórz uproszczony profil innego gracza."""
     ensure_user_fields(user)
     total_usd = sum(c.get("price_usd", 0) for c in user.get("cards", []))
@@ -1558,7 +1561,10 @@ def build_other_profile_embed(user, all_sets, username: str) -> discord.Embed:
         description=f"Wartość kolekcji: {total_usd:.2f} USD ({format_bc(total_bc)})",
         color=EMBED_COLOR,
     )
-    embed.set_thumbnail(url="attachment://kolekcja.png")
+    if avatar_url:
+        embed.set_thumbnail(url=avatar_url)
+    else:
+        embed.set_thumbnail(url="attachment://kolekcja.png")
     if lines:
         embed.add_field(name="Sety", value="\n".join(lines), inline=False)
     if icons:
@@ -1994,9 +2000,9 @@ async def profil_gracza(interaction: discord.Interaction, gracz: discord.Member)
         return
     user = ensure_user_fields(users[uid])
     all_sets = get_all_sets()
-    embed = build_other_profile_embed(user, all_sets, gracz.display_name)
-    file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
-    await interaction.response.send_message(embed=embed, ephemeral=True, file=file)
+    avatar = gracz.display_avatar.url
+    embed = build_other_profile_embed(user, all_sets, gracz.display_name, avatar)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- KOMENDA SALDO ---
 @client.tree.command(name="saldo", description="Sprawdź ilość posiadanych monet")
@@ -2355,6 +2361,16 @@ async def on_message(message):
                 f"🎁 Darmowy booster **{name}**! Kto pierwszy kliknie, zgarnia.",
                 view=QuickBonusView(booster_id=sid)
             )
+        if EVENT_ROLE_ID and message.guild:
+            role = message.guild.get_role(EVENT_ROLE_ID)
+            if role:
+                for member in role.members:
+                    try:
+                        await member.send(
+                            "🎁 Na serwerze pojawiły się losowe darmowe monety! Sprawdź kanał."
+                        )
+                    except Exception:
+                        pass
     if message.author.id != STARTIT_BOT_ID:
         return
     if "kupił booster" in message.content:

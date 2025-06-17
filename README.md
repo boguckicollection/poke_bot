@@ -33,6 +33,8 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
    POKETCG_API_KEY=twoj_klucz_api
    # Opcjonalnie ID emoji bc_coin na Twoim serwerze
    BC_COIN_ID=1381617796282319010
+   # Opcjonalnie ID roli do powiadomień o eventach
+   EVENT_ROLE_ID=123456789012345678
    ```
 3. Uruchom bota:
    ```bash
