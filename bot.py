@@ -1001,8 +1001,11 @@ class ShopView(View):
                     emoji = discord.PartialEmoji.from_str(emoji_str)
                 else:
                     emoji = emoji_str
+                price_desc = f"{info['price']:.2f} BC"
                 options.append(
-                    discord.SelectOption(label=info["name"], value=iid, emoji=emoji)
+                    discord.SelectOption(
+                        label=info["name"], value=iid, emoji=emoji, description=price_desc
+                    )
                 )
 
             class ItemSelectView(View):
@@ -2024,7 +2027,11 @@ async def saldo(interaction: discord.Interaction):
     sales = user.get("money_sales", 0)
     events = user.get("money_events", 0)
     ach = user.get("money_achievements", 0)
-    embed = create_embed(title="Twoje saldo", color=discord.Color.green())
+    username = interaction.user.display_name
+    embed = create_embed(
+        title=f"Saldo użytkownika {username}",
+        color=discord.Color.green(),
+    )
     embed.add_field(name="Łącznie", value=format_bc(money), inline=False)
     embed.add_field(name="Sprzedaż kart", value=format_bc(sales), inline=False)
     embed.add_field(name="Eventy", value=format_bc(events), inline=False)
@@ -2497,6 +2504,20 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
             found = set_cache.get(rarity, [])
             return random.sample(found, min(count, len(found)))
 
+        async def get_most_expensive_card():
+            set_cache = CARD_CACHE.setdefault(set_id, {})
+            if not set_cache:
+                await fetch_all_cards_for_set(session, set_id)
+            max_card = None
+            max_price = 0.0
+            for cards in set_cache.values():
+                for card in cards:
+                    price = card_price_usd(card) or 0
+                    if price > max_price:
+                        max_price = price
+                        max_card = card
+            return max_card
+
         if random.random() < GOD_PACK_CHANCE:
             rare_pool = [
                 "Hyper Rare",
@@ -2513,6 +2534,13 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
                         break
             return result[:10]
 
+        extra_best = 0
+        if boost_active and random.random() < 0.30:
+            best = await get_most_expensive_card()
+            if best:
+                result.append(best)
+                extra_best = 1
+
         result += await get_cards_by_rarity("Common", 4)
         result += await get_cards_by_rarity("Uncommon", 3)
         rare_pools = [
@@ -2520,7 +2548,8 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
             ("Double Rare", 0.25),
             ("Rare", 0.75),
         ]
-        for _ in range(2):
+        rare_iterations = 2 + (1 if boost_active else 0)
+        for _ in range(rare_iterations):
             got_card = False
             for rarity, base_prob in rare_pools:
                 prob = min(1.0, base_prob * 2) if boost_active else base_prob
@@ -2539,23 +2568,27 @@ async def fetch_cards_from_set(set_id: str, user_id: str = None):
             ("Special Illustration Rare", 0.02),
             ("Illustration Rare", 0.07)
         ]
-        got_card = False
-        for rarity, base_prob in ir_slots:
-            prob = min(1.0, base_prob * 2) if boost_active else base_prob
-            if random.random() < prob:
-                card = await get_cards_by_rarity(rarity, 1)
+        ir_iterations = 1 + (1 if boost_active else 0)
+        for _ in range(ir_iterations):
+            got_card = False
+            for rarity, base_prob in ir_slots:
+                prob = min(1.0, base_prob * 2) if boost_active else base_prob
+                if random.random() < prob:
+                    card = await get_cards_by_rarity(rarity, 1)
+                    if card:
+                        result += card
+                        got_card = True
+                        break
+            if not got_card:
+                card = await get_cards_by_rarity("Common", 1)
                 if card:
                     result += card
-                    got_card = True
-                    break
-        if not got_card:
-            card = await get_cards_by_rarity("Common", 1)
-            if card:
-                result += card
     commons = [c for c in result if c.get("rarity") in ["Common", "Uncommon"]]
     rares = [c for c in result if c.get("rarity") not in ["Common", "Uncommon"]]
     random.shuffle(commons)
     cards_result = commons + rares
-    return cards_result[:10]
+    extra_slots = (rare_iterations - 2) + (ir_iterations - 1) + extra_best
+    limit = 10 + max(0, extra_slots)
+    return cards_result[:limit]
 
 client.run(os.environ["BOT_TOKEN"])
