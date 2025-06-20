@@ -137,7 +137,8 @@ class GiveawayView(View):
     async def on_timeout(self):
         # Stop any additional timers that might still be running
         self.stop()
-        if not self.entries:
+        entries = list(self.entries)
+        if not entries:
             if self.message:
                 try:
                     await self.message.channel.send("📭 Giveaway zakończył się bez uczestników.")
@@ -145,7 +146,8 @@ class GiveawayView(View):
                     pass
                 await self.finalize_embed()
             return
-        chosen = random.sample(list(self.entries), min(self.winners, len(self.entries)))
+        random.shuffle(entries)
+        chosen = entries[: min(self.winners, len(entries))]
         users = load_users()
         for uid in chosen:
             uid_str = str(uid)
