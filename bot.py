@@ -2352,11 +2352,16 @@ class EventTypeView(View):
 
 
 class RewardSetupView(View):
+    PAGE_SIZE = 25
+
     def __init__(self):
         super().__init__(timeout=60)
         self.target_user: discord.Member | None = None
         self.reward_type = "booster"
         self.booster_id: str | None = None
+
+        self.all_sets = get_all_sets()
+        self.page = 0
 
         self.user_select = discord.ui.UserSelect(placeholder="Wybierz użytkownika")
         self.user_select.callback = self.on_user_select
@@ -2370,17 +2375,23 @@ class RewardSetupView(View):
         self.type_select.callback = self.on_type_select
         self.add_item(self.type_select)
 
-        booster_options = [
-            discord.SelectOption(label=s["name"], value=s["id"])
-            for s in get_all_sets()[:25]
-        ]
-        self.booster_select = discord.ui.Select(placeholder="Wybierz booster", options=booster_options)
+        self.booster_select = discord.ui.Select(placeholder="Wybierz booster")
         self.booster_select.callback = self.on_booster_select
         self.add_item(self.booster_select)
+
+        self.prev_page = discord.ui.Button(label="⬅️", style=discord.ButtonStyle.secondary)
+        self.prev_page.callback = self.on_prev_page
+        self.add_item(self.prev_page)
+
+        self.next_page = discord.ui.Button(label="➡️", style=discord.ButtonStyle.secondary)
+        self.next_page.callback = self.on_next_page
+        self.add_item(self.next_page)
 
         self.next_button = discord.ui.Button(label="Dalej", style=discord.ButtonStyle.success)
         self.next_button.callback = self.proceed
         self.add_item(self.next_button)
+
+        self.update_page_controls()
 
     async def on_user_select(self, interaction: discord.Interaction):
         self.target_user = self.user_select.values[0]
@@ -2388,12 +2399,38 @@ class RewardSetupView(View):
 
     async def on_type_select(self, interaction: discord.Interaction):
         self.reward_type = self.type_select.values[0]
-        self.booster_select.disabled = self.reward_type != "booster"
+        self.update_page_controls()
         await interaction.response.edit_message(view=self)
 
     async def on_booster_select(self, interaction: discord.Interaction):
         self.booster_id = self.booster_select.values[0]
         await interaction.response.defer(ephemeral=True)
+
+    def update_page_controls(self):
+        start = self.page * self.PAGE_SIZE
+        end = start + self.PAGE_SIZE
+        opts = [
+            discord.SelectOption(label=s["name"], value=s["id"])
+            for s in self.all_sets[start:end]
+        ]
+        self.booster_select.options = opts
+        self.booster_select.disabled = self.reward_type != "booster" or not opts
+        self.prev_page.disabled = self.reward_type != "booster" or self.page == 0
+        self.next_page.disabled = (
+            self.reward_type != "booster" or end >= len(self.all_sets)
+        )
+
+    async def on_prev_page(self, interaction: discord.Interaction):
+        if self.page > 0:
+            self.page -= 1
+            self.update_page_controls()
+        await interaction.response.edit_message(view=self)
+
+    async def on_next_page(self, interaction: discord.Interaction):
+        if (self.page + 1) * self.PAGE_SIZE < len(self.all_sets):
+            self.page += 1
+            self.update_page_controls()
+        await interaction.response.edit_message(view=self)
 
     async def proceed(self, interaction: discord.Interaction):
         if not self.target_user:
