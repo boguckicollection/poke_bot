@@ -135,6 +135,8 @@ class GiveawayView(View):
         )
 
     async def on_timeout(self):
+        # Stop any additional timers that might still be running
+        self.stop()
         if not self.entries:
             if self.message:
                 try:
@@ -194,7 +196,9 @@ class GiveawayView(View):
         embed.timestamp = self.end_time
 
         try:
-            await self.message.edit(embed=embed, view=self)
+            # Don't pass the view when updating the embed to avoid resetting the
+            # internal timeout timer each time someone joins
+            await self.message.edit(embed=embed)
         except Exception as e:
             print(f"❌ Błąd aktualizacji embeda: {e}")
 
@@ -205,6 +209,9 @@ class GiveawayView(View):
         # Disable all buttons when giveaway ends
         for child in self.children:
             child.disabled = True
+
+        # Ensure the view is stopped so timeout doesn't fire again
+        self.stop()
 
         names = [f"<@{uid}>" for uid in self.entries]
         embed = self.message.embeds[0]
