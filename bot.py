@@ -1512,7 +1512,7 @@ class CollectionMainView(View):
                 color=EMBED_COLOR,
             )
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=False, file=file)
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
     class BoosterOpenButton(Button):
         def __init__(self, user, boosters_counter, all_sets):
             super().__init__(label="Otwórz boostery", style=discord.ButtonStyle.success)
