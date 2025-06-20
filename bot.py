@@ -1428,10 +1428,37 @@ class CollectionMainView(View):
                     self.user = user
                     self.sets = sets
                     self.options = options
+                    self.selected_set_id = selected_set_id
 
                     self.add_item(SetDropdownSelect(self, options))
                     if selected_set_id:
                         self.add_item(CollectionMainView.ViewCardsButton(user, sets, selected_set_id))
+                        self.duplicates = get_set_duplicates(user, selected_set_id)
+                        if not self.duplicates:
+                            self.sell_duplicates.disabled = True
+
+                @discord.ui.button(label="Sprzedaj duplikaty", style=discord.ButtonStyle.danger)
+                async def sell_duplicates(self, i: discord.Interaction, button: Button):
+                    users = load_users()
+                    uid = str(i.user.id)
+                    user = users[uid]
+                    duplicates = get_set_duplicates(user, self.selected_set_id)
+                    counts = Counter(d["id"] for d in duplicates)
+                    total = 0
+                    remaining = []
+                    for c in user["cards"]:
+                        if c["id"].startswith(self.selected_set_id) and counts.get(c["id"], 0) > 0:
+                            counts[c["id"]] -= 1
+                            total += usd_to_bc(c.get("price_usd", 0))
+                        else:
+                            remaining.append(c)
+                    user["cards"] = remaining
+                    user["money"] = user.get("money", 0) + total
+                    user["money_sales"] = user.get("money_sales", 0) + total
+                    save_users(users)
+                    button.disabled = True
+                    await i.response.edit_message(view=self)
+                    await i.followup.send(f"Sprzedano duplikaty za {format_bc(total)}", ephemeral=True)
 
 
             class SetDropdownSelect(Select):
@@ -1549,6 +1576,18 @@ async def build_set_embed(user, sets, set_id):
     if owned == total_cards and total_cards > 0:
         embed.add_field(name="🎉 Ukończono master set!", value="Masz wszystkie karty z tego setu!", inline=False)
     return embed
+
+
+def get_set_duplicates(user: dict, set_id: str) -> list[dict]:
+    """Return a list of duplicate cards from a specific set."""
+    duplicates: list[dict] = []
+    counts: Counter[str] = Counter()
+    for card in user.get("cards", []):
+        if card["id"].startswith(set_id):
+            counts[card["id"]] += 1
+            if counts[card["id"]] > 1:
+                duplicates.append(card)
+    return duplicates
 
 
 def build_other_profile_embed(user, all_sets, username: str, avatar_url: str | None = None) -> discord.Embed:
