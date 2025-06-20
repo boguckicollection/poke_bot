@@ -1430,9 +1430,58 @@ class CollectionMainView(View):
                     self.options = options
                     self.selected_set_id = selected_set_id
 
+                    self.duplicates = []
+
                     self.add_item(SetDropdownSelect(self, options))
                     if selected_set_id:
                         self.add_item(CollectionMainView.ViewCardsButton(user, sets, selected_set_id))
+                        self.duplicates = get_set_duplicates(user, selected_set_id)
+                        self.add_item(self.SellDuplicatesButton(self))
+
+                class SellDuplicatesButton(Button):
+                    def __init__(self, parent_view):
+                        super().__init__(label="Sprzedaj duplikaty", style=discord.ButtonStyle.danger)
+                        self.parent_view = parent_view
+                        if not parent_view.duplicates:
+                            self.disabled = True
+
+                    async def callback(self, interaction: discord.Interaction):
+                        users = load_users()
+                        user = users[str(interaction.user.id)]
+                        duplicates = get_set_duplicates(user, self.parent_view.selected_set_id)
+                        if not duplicates:
+                            await interaction.response.send_message("Brak duplikatów w tym secie.", ephemeral=True)
+                            return
+                        total = 0
+                        remaining = []
+                        counts = Counter(d["id"] for d in duplicates)
+                        for c in user["cards"]:
+                            if counts.get(c["id"], 0) > 0:
+                                counts[c["id"]] -= 1
+                                total += usd_to_bc(c.get("price_usd", 0))
+                            else:
+                                remaining.append(c)
+                        user["cards"] = remaining
+                        user["money"] = user.get("money", 0) + total
+                        user["money_sales"] = user.get("money_sales", 0) + total
+                        save_users(users)
+
+                        # update view state
+                        self.parent_view.user = user
+                        self.parent_view.duplicates = get_set_duplicates(user, self.parent_view.selected_set_id)
+                        if not self.parent_view.duplicates:
+                            self.disabled = True
+
+                        embed = await build_set_embed(
+                            user,
+                            self.parent_view.sets,
+                            self.parent_view.selected_set_id,
+                        )
+                        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+                        await interaction.followup.send(
+                            f"Sprzedano duplikaty za {format_bc(total)}",
+                            ephemeral=True,
+                        )
 
 
             class SetDropdownSelect(Select):

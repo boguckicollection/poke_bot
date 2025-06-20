@@ -162,6 +162,7 @@ class GiveawayView(View):
             user["boosters"].extend([self.booster_id] * self.ilosc)
             users[uid_str] = user
         save_users(users)
+        await self.finalize_embed()
         mentions = ", ".join(f"<@{uid}>" for uid in chosen)
         await self.message.channel.send(f"🏆 Gratulacje! Giveaway wygrywają: {mentions}")
         for uid in chosen:
@@ -169,14 +170,10 @@ class GiveawayView(View):
             if user_obj:
                 try:
                     await user_obj.send(
-                        f"🎉 Gratulacje! Wygrałeś **{self.ilosc}x booster** z zestawu `{self.booster_id}`!\n"
-                        f"Zostały dodane do Twojej kolekcji."
+                        f"🎉 Gratulacje! Wygrałeś **{self.ilosc}x booster** z zestawu `{self.booster_id}`!\n",                        f"Zostały dodane do Twojej kolekcji."
                     )
                 except:
                     pass  # użytkownik może mieć zablokowane DM
-
-        await self.finalize_embed()
-
     async def update_embed(self):
         if not self.message or not self.message.embeds:
             return
