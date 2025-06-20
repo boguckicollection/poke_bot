@@ -1433,32 +1433,6 @@ class CollectionMainView(View):
                     self.add_item(SetDropdownSelect(self, options))
                     if selected_set_id:
                         self.add_item(CollectionMainView.ViewCardsButton(user, sets, selected_set_id))
-                        self.duplicates = get_set_duplicates(user, selected_set_id)
-                        if not self.duplicates:
-                            self.sell_duplicates.disabled = True
-
-                @discord.ui.button(label="Sprzedaj duplikaty", style=discord.ButtonStyle.danger)
-                async def sell_duplicates(self, i: discord.Interaction, button: Button):
-                    users = load_users()
-                    uid = str(i.user.id)
-                    user = users[uid]
-                    duplicates = get_set_duplicates(user, self.selected_set_id)
-                    counts = Counter(d["id"] for d in duplicates)
-                    total = 0
-                    remaining = []
-                    for c in user["cards"]:
-                        if c["id"].startswith(self.selected_set_id) and counts.get(c["id"], 0) > 0:
-                            counts[c["id"]] -= 1
-                            total += usd_to_bc(c.get("price_usd", 0))
-                        else:
-                            remaining.append(c)
-                    user["cards"] = remaining
-                    user["money"] = user.get("money", 0) + total
-                    user["money_sales"] = user.get("money_sales", 0) + total
-                    save_users(users)
-                    button.disabled = True
-                    await i.response.edit_message(view=self)
-                    await i.followup.send(f"Sprzedano duplikaty za {format_bc(total)}", ephemeral=True)
 
 
             class SetDropdownSelect(Select):
@@ -1484,12 +1458,12 @@ class CollectionMainView(View):
 
             view = SetDropdownView(self.user, sets, options)
             embed = create_embed(
-                title="Twoje sety",
+                title="",
                 description="Wybierz set z listy poniżej",
                 color=EMBED_COLOR,
             )
             file = discord.File(GRAPHIC_DIR / "sety.png", filename="sety.png")
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=False, file=file)
     class BoosterOpenButton(Button):
         def __init__(self, user, boosters_counter, all_sets):
             super().__init__(label="Otwórz boostery", style=discord.ButtonStyle.success)
@@ -1573,6 +1547,15 @@ async def build_set_embed(user, sets, set_id):
     if numery:
         nums = ", ".join(str(n) for n in numery)
         embed.add_field(name="📄 **Posiadane karty (numery)**", value=nums, inline=False)
+    duplicates = get_set_duplicates(user, set_id)
+    if duplicates:
+        dup_count = len(duplicates)
+        dup_value = sum(usd_to_bc(c.get("price_usd", 0)) for c in duplicates)
+        embed.add_field(
+            name="♻️ Duplikaty",
+            value=f"{dup_count} kart o wartości {format_bc(dup_value)}",
+            inline=False,
+        )
     if owned == total_cards and total_cards > 0:
         embed.add_field(name="🎉 Ukończono master set!", value="Masz wszystkie karty z tego setu!", inline=False)
     return embed
