@@ -2281,6 +2281,33 @@ async def giveaway_command(interaction: discord.Interaction):
         return
     await interaction.response.send_modal(GiveawayModal())
 
+# --- KOMENDA RULETKA ---
+@client.tree.command(name="ruletka", description="Zakręć kołem i wylosuj pole")
+async def ruletka_cmd(interaction: discord.Interaction):
+    fields = [f"Pole {i}" for i in range(1, 9)]
+    pointer = 0
+    light_idx = 0
+
+    def format_board(ptr: int, light: int) -> str:
+        lights = ["🔅", "🔆"]
+        lights_line = " ".join(lights[light] for _ in fields)
+        fields_line = " | ".join(fields)
+        pointer_line = "    " * ptr + "🔻"
+        return f"{lights_line}\n{fields_line}\n{pointer_line}"
+
+    await interaction.response.send_message(format_board(pointer, light_idx), ephemeral=True)
+    msg = await interaction.original_response()
+
+    spins = random.randint(15, 30)
+    for i in range(spins):
+        await asyncio.sleep(0.4)
+        pointer = (pointer + 1) % len(fields)
+        light_idx = 1 - light_idx
+        await msg.edit(content=format_board(pointer, light_idx))
+
+    winning_field = fields[pointer]
+    await msg.edit(content=format_board(pointer, light_idx) + f"\n🎉 Wygrywa **{winning_field}**!")
+
 # --- KOMENDA EVENT ---
 class EventModal(Modal, title="🗓️ Nowy Event"):
     def __init__(self, event_type: str):
