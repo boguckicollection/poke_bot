@@ -2135,10 +2135,19 @@ async def daily(interaction: discord.Interaction):
         await interaction.response.send_message("📭 Nie masz konta. Użyj `/start`.", ephemeral=True)
         return
     ensure_user_fields(users[uid])
-    now = datetime.datetime.now(datetime.UTC).timestamp()
+    now_dt = datetime.datetime.now(datetime.UTC)
+    now = now_dt.timestamp()
     last = users[uid].get("last_daily", 0)
-    if now - last < DAILY_COOLDOWN:
-        remaining = int(DAILY_COOLDOWN - (now - last))
+    last_dt = datetime.datetime.fromtimestamp(last, datetime.UTC)
+    if last != 0 and last_dt.date() == now_dt.date():
+        remaining = (
+            datetime.datetime.combine(
+                now_dt.date() + datetime.timedelta(days=1),
+                datetime.time.min,
+                tzinfo=datetime.UTC,
+            )
+            - now_dt
+        ).seconds
         h = remaining // 3600
         m = (remaining % 3600) // 60
         s = remaining % 60
@@ -2148,7 +2157,7 @@ async def daily(interaction: discord.Interaction):
         return
     # Aktualizacja serii dziennych nagród
     streak = users[uid].get("daily_streak", 0)
-    if now - last <= DAILY_COOLDOWN * 1.5 and last != 0:
+    if last != 0 and (now_dt.date() - last_dt.date()).days == 1:
         streak += 1
     else:
         if last != 0 and users[uid].get("streak_freeze", 0) > 0:
@@ -2173,7 +2182,7 @@ async def daily(interaction: discord.Interaction):
     total_gain = amount + bonus
     users[uid]["money"] = users[uid].get("money", 0) + total_gain
     users[uid]["money_events"] = users[uid].get("money_events", 0) + total_gain
-    users[uid]["last_daily"] = now
+    users[uid]["last_daily"] = now_dt.timestamp()
     if check_for_all_achievements(users[uid]) and grant_achievement(users[uid], "all_achievements"):
         new_codes.append("all_achievements")
     save_users(users)
