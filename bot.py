@@ -2313,7 +2313,7 @@ async def open_booster_quick(interaction, set_id, *, count: int = 1):
             f"{random.choice(FUN_EMOJIS)} Koniec boosterów! Otworzono {count} sztuk.\n"
             f"```{summary}```\n"
             f"Top 5 kart:\n```{top_summary}```\n"
-            f"💰 **Suma wartości:** {total_usd:.2f} USD ({format_bc(total_bc)})\n"
+            f"💰 **Suma wartości ({count} boosterów):** {total_usd:.2f} USD ({format_bc(total_bc)})\n"
             f"♻️ **Wartość duplikatów:** {format_bc(duplicate_bc)}"
         ),
         embed=embed,
