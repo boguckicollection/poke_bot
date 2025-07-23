@@ -2269,6 +2269,45 @@ async def open_booster_quick(interaction, set_id, *, count: int = 1):
         embed = create_embed(title="Najlepsza karta", color=discord.Color.gold())
         embed.set_image(url=img)
 
+    class AfterBoosterView(View):
+        def __init__(self, duplicates):
+            super().__init__(timeout=120)
+            self.duplicates = duplicates
+            if not self.duplicates:
+                self.sell_duplicates.disabled = True
+
+        @discord.ui.button(label="Przejdź do profilu", style=discord.ButtonStyle.primary)
+        async def to_collection(self, i: discord.Interaction, button: Button):
+            users = load_users()
+            user = users[str(i.user.id)]
+            all_sets = get_all_sets()
+            boosters_counter = Counter(user["boosters"])
+            view = CollectionMainView(user, boosters_counter, all_sets)
+            embed = await view.build_summary_embed()
+            file = discord.File(GRAPHIC_DIR / "kolekcja.png", filename="kolekcja.png")
+            await i.response.send_message(embed=embed, view=view, ephemeral=True, file=file)
+
+        @discord.ui.button(label="Sprzedaj duplikaty", style=discord.ButtonStyle.danger)
+        async def sell_duplicates(self, i: discord.Interaction, button: Button):
+            users = load_users()
+            user = users[str(i.user.id)]
+            total = 0
+            remaining = []
+            counts = Counter(d["id"] for d in self.duplicates)
+            for c in user["cards"]:
+                if counts.get(c["id"], 0) > 0:
+                    counts[c["id"]] -= 1
+                    total += usd_to_bc(c.get("price_usd", 0))
+                else:
+                    remaining.append(c)
+            user["cards"] = remaining
+            user["money"] = user.get("money", 0) + total
+            user["money_sales"] = user.get("money_sales", 0) + total
+            save_users(users)
+            button.disabled = True
+            await i.response.edit_message(view=self)
+            await i.followup.send(f"Sprzedano duplikaty za {format_bc(total)}", ephemeral=True)
+
     await interaction.edit_original_response(
         content=(
             f"{random.choice(FUN_EMOJIS)} Koniec boosterów! Otworzono {count} sztuk.\n"
@@ -2278,7 +2317,7 @@ async def open_booster_quick(interaction, set_id, *, count: int = 1):
             f"♻️ **Wartość duplikatów:** {format_bc(duplicate_bc)}"
         ),
         embed=embed,
-        view=None,
+        view=AfterBoosterView(duplicate_cards),
     )
 
 # --- KOMENDA PROFIL (z paginacją, przyciski) ---
