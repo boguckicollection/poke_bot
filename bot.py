@@ -2037,6 +2037,42 @@ async def otworz(interaction: discord.Interaction):
         )
         await BOOSTER_QUEUE.put((interaction, chosen))
 
+# --- KOMENDA Otwórz Szybko ---
+@client.tree.command(name="otworz_szybko", description="Otwórz booster bez animacji")
+async def otworz_szybko(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    users = load_users()
+    if user_id not in users or not users[user_id]["boosters"]:
+        await interaction.response.send_message(
+            "❌ Nie masz boosterów do otwarcia! Odwiedź `/sklep`.", ephemeral=True
+        )
+        return
+    ensure_user_fields(users[user_id])
+    all_sets = get_all_sets()
+    id_to_name = {s['id']: s['name'] for s in all_sets}
+    booster_counts = Counter(users[user_id]["boosters"])
+    if len(booster_counts) > 1:
+        options = [
+            discord.SelectOption(label=f"{id_to_name.get(booster_id, booster_id)} x{count}", value=booster_id)
+            for booster_id, count in booster_counts.items()
+        ]
+
+        class BoosterSelectView(View):
+            @select(placeholder="Wybierz booster do otwarcia", options=options)
+            async def select_callback(self, i2: discord.Interaction, menu_booster: discord.ui.Select):
+                chosen = menu_booster.values[0]
+                users[user_id]["boosters"].remove(chosen)
+                save_users(users)
+                await i2.response.defer(ephemeral=True, thinking=True)
+                await open_booster_quick(i2, chosen)
+
+        await interaction.response.send_message("🃏 Wybierz booster do otwarcia:", view=BoosterSelectView(), ephemeral=True)
+    else:
+        chosen = users[user_id]["boosters"].pop(0)
+        save_users(users)
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        await open_booster_quick(interaction, chosen)
+
 # --- FUNKCJA Otwierania boostera (z logo setu) ---
 async def open_booster(interaction, set_id):
     cards = await fetch_cards_from_set(set_id, user_id=str(interaction.user.id))
@@ -2059,6 +2095,39 @@ async def open_booster(interaction, set_id):
     # Interaction is already deferred before calling this function, so we can
     # always edit the original response to show the first card.
     await view.show_card(interaction, first=True)
+
+# --- FUNKCJA Szybkiego otwierania boostera ---
+async def open_booster_quick(interaction, set_id):
+    """Otwórz booster bez animacji i pokaż tylko podsumowanie."""
+    cards = await fetch_cards_from_set(set_id, user_id=str(interaction.user.id))
+    if not cards:
+        await interaction.edit_original_response(
+            content="⚠️ Nie udało się pobrać kart z boostera!", embed=None, view=None
+        )
+        return
+
+    view = CardRevealView(cards, user_id=str(interaction.user.id), set_id=set_id)
+    await view.finalize(interaction)
+
+    summary = "\n".join(view.summaries)
+    total_usd = sum(card_price_usd(c) or 0 for c in cards)
+    total_bc = usd_to_bc(total_usd)
+    best = max(cards, key=lambda c: card_price_usd(c) or 0)
+    img = best.get("images", {}).get("large") or best.get("images", {}).get("small")
+    embed = None
+    if img:
+        embed = create_embed(title="Najlepsza karta", color=discord.Color.gold())
+        embed.set_image(url=img)
+
+    await interaction.edit_original_response(
+        content=(
+            f"{random.choice(FUN_EMOJIS)} Koniec boostera! Oto Twoje karty:\n"
+            f"```{summary}```\n"
+            f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({format_bc(total_bc)})"
+        ),
+        embed=embed,
+        view=None,
+    )
 
 # --- KOMENDA PROFIL (z paginacją, przyciski) ---
 @client.tree.command(name="profil", description="Twój profil, boostery i karty z setów!")
