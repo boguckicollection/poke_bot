@@ -2308,14 +2308,26 @@ async def open_booster_quick(interaction, set_id, *, count: int = 1):
             await i.response.edit_message(view=self)
             await i.followup.send(f"Sprzedano duplikaty za {format_bc(total)}", ephemeral=True)
 
+    # Build the final message first so we can ensure it does not exceed the
+    # Discord 2000 character limit. Calculate how many characters are available
+    # for the card summary and truncate it if needed.
+    header = (
+        f"{random.choice(FUN_EMOJIS)} Koniec boosterów! Otworzono {count} sztuk.\n"
+    )
+    footer = (
+        f"Top 5 kart:\n```{top_summary}```\n"
+        f"💰 **Suma wartości ({count} boosterów):** {total_usd:.2f} USD ({format_bc(total_bc)})\n"
+        f"♻️ **Wartość duplikatów:** {format_bc(duplicate_bc)}"
+    )
+    overhead_len = len(header) + len("```") + len("```\n") + len(footer)
+    available = 2000 - overhead_len
+    truncated_summary = summary
+    if available < len(summary):
+        truncated_summary = summary[: max(0, available - 3)] + "..."
+    final_message = header + f"```{truncated_summary}```\n" + footer
+
     await interaction.edit_original_response(
-        content=(
-            f"{random.choice(FUN_EMOJIS)} Koniec boosterów! Otworzono {count} sztuk.\n"
-            f"```{summary}```\n"
-            f"Top 5 kart:\n```{top_summary}```\n"
-            f"💰 **Suma wartości ({count} boosterów):** {total_usd:.2f} USD ({format_bc(total_bc)})\n"
-            f"♻️ **Wartość duplikatów:** {format_bc(duplicate_bc)}"
-        ),
+        content=final_message,
         embed=embed,
         view=AfterBoosterView(duplicate_cards),
     )
