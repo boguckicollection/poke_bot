@@ -252,6 +252,10 @@ def format_bc(amount: float) -> str:
     """Sformatuj ilość BoguckiCoinów z emoji."""
     return f"{amount:.2f} BC {COIN_EMOJI}"
 
+def format_bc_plain(amount: float) -> str:
+    """Sformatuj ilość BoguckiCoinów bez emoji."""
+    return f"{amount:.2f} BC"
+
 def card_price_usd(card: dict) -> float | None:
     """Zwróć cenę rynkową karty w USD, jeśli jest znana."""
     if "tcgplayer" in card and "prices" in card["tcgplayer"]:
@@ -2258,7 +2262,7 @@ async def open_booster_quick(interaction, set_id, *, count: int = 1):
 
     top_sorted = sorted(all_cards, key=lambda c: card_price_usd(c) or 0, reverse=True)[:5]
     top_lines = [
-        f"{idx+1}. {c['name']} — {format_bc(usd_to_bc(card_price_usd(c) or 0))}"
+        f"{idx+1}. {c['name']} — {format_bc_plain(usd_to_bc(card_price_usd(c) or 0))}"
         for idx, c in enumerate(top_sorted)
     ]
     top_summary = "\n".join(top_lines)
