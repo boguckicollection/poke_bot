@@ -53,7 +53,7 @@ wykonywać codzienne zadania oraz handlować przedmiotami w wbudowanym sklepie.
 - `/ranking` – najlepsze dropy tygodnia.
 - `/help` – lista wszystkich komend bota.
 - `/otworz` – otwórz posiadane boostery i odsłaniaj karty jedna po drugiej.
-- `/otworz_szybko` – otwórz booster i pokaż tylko krótkie podsumowanie.
+- `/otworz_szybko` – otwórz jeden lub kilka boosterów i pokaż podsumowanie (parametr `count`).
 - `/giveaway` – stwórz losowanie boosterów (administrator).
 - `/nagroda` – przyznaj booster lub monety wybranemu graczowi (administrator).
 

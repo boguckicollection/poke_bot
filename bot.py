@@ -2011,8 +2011,8 @@ async def otworz(interaction: discord.Interaction):
     booster_counts = Counter(users[user_id]["boosters"])
     if len(booster_counts) > 1:
         options = [
-            discord.SelectOption(label=f"{id_to_name.get(booster_id, booster_id)} x{count}", value=booster_id)
-            for booster_id, count in booster_counts.items()
+            discord.SelectOption(label=f"{id_to_name.get(booster_id, booster_id)} x{qty}", value=booster_id)
+            for booster_id, qty in booster_counts.items()
         ]
         class BoosterSelectView(View):
             @select(placeholder="Wybierz booster do otwarcia", options=options)
@@ -2039,7 +2039,8 @@ async def otworz(interaction: discord.Interaction):
 
 # --- KOMENDA Otwórz Szybko ---
 @client.tree.command(name="otworz_szybko", description="Otwórz booster bez animacji")
-async def otworz_szybko(interaction: discord.Interaction):
+@app_commands.describe(count="Ile boosterów otworzyć")
+async def otworz_szybko(interaction: discord.Interaction, count: app_commands.Range[int, 1, 10] = 1):
     user_id = str(interaction.user.id)
     users = load_users()
     if user_id not in users or not users[user_id]["boosters"]:
@@ -2061,17 +2062,28 @@ async def otworz_szybko(interaction: discord.Interaction):
             @select(placeholder="Wybierz booster do otwarcia", options=options)
             async def select_callback(self, i2: discord.Interaction, menu_booster: discord.ui.Select):
                 chosen = menu_booster.values[0]
-                users[user_id]["boosters"].remove(chosen)
+                if booster_counts[chosen] < count:
+                    await i2.response.send_message("❌ Masz za mało boosterów tego typu.", ephemeral=True)
+                    return
+                for _ in range(count):
+                    users[user_id]["boosters"].remove(chosen)
                 save_users(users)
                 await i2.response.defer(ephemeral=True, thinking=True)
-                await open_booster_quick(i2, chosen)
+                await open_booster_quick(i2, chosen, count=count)
 
         await interaction.response.send_message("🃏 Wybierz booster do otwarcia:", view=BoosterSelectView(), ephemeral=True)
     else:
-        chosen = users[user_id]["boosters"].pop(0)
+        chosen = users[user_id]["boosters"][0]
+        if booster_counts[chosen] < count:
+            await interaction.response.send_message(
+                "❌ Masz za mało boosterów tego typu.", ephemeral=True
+            )
+            return
+        for _ in range(count):
+            users[user_id]["boosters"].remove(chosen)
         save_users(users)
         await interaction.response.defer(ephemeral=True, thinking=True)
-        await open_booster_quick(interaction, chosen)
+        await open_booster_quick(interaction, chosen, count=count)
 
 # --- FUNKCJA Otwierania boostera (z logo setu) ---
 async def open_booster(interaction, set_id):
@@ -2097,23 +2109,161 @@ async def open_booster(interaction, set_id):
     await view.show_card(interaction, first=True)
 
 # --- FUNKCJA Szybkiego otwierania boostera ---
-async def open_booster_quick(interaction, set_id):
-    """Otwórz booster bez animacji i pokaż tylko podsumowanie."""
-    cards = await fetch_cards_from_set(set_id, user_id=str(interaction.user.id))
-    if not cards:
+async def open_booster_quick(interaction, set_id, *, count: int = 1):
+    """Otwórz jeden lub więcej boosterów bez animacji i pokaż podsumowanie."""
+    user_id = str(interaction.user.id)
+    all_cards = []
+    for _ in range(count):
+        cards = await fetch_cards_from_set(set_id, user_id=user_id)
+        if not cards:
+            continue
+        all_cards.extend(cards)
+
+    if not all_cards:
         await interaction.edit_original_response(
             content="⚠️ Nie udało się pobrać kart z boostera!", embed=None, view=None
         )
         return
 
-    view = CardRevealView(cards, user_id=str(interaction.user.id), set_id=set_id)
-    await view.finalize(interaction)
+    users = load_users()
+    ensure_user_fields(users[user_id])
+    user = users[user_id]
 
-    summary = "\n".join(view.summaries)
-    total_usd = sum(card_price_usd(c) or 0 for c in cards)
+    existing_before = Counter(c["id"] for c in user["cards"])
+    existing = existing_before.copy()
+    counts_added = Counter()
+    summary_info = {}
+    duplicate_cards = []
+    duplicate_usd = 0.0
+    max_price = 0.0
+    max_name = ""
+
+    for card in all_cards:
+        price = card_price_usd(card)
+        img_url = ""
+        if "images" in card:
+            img_url = card["images"].get("small") or card["images"].get("large") or ""
+        rarity = card.get("rarity", "Unknown")
+        emoji = RARITY_EMOJIS.get(rarity, "❔")
+        summary_info[card["id"]] = {"name": card["name"], "rarity": rarity, "emoji": emoji}
+        if existing[card["id"]] > 0:
+            duplicate_cards.append({"id": card["id"], "price_usd": price or 0})
+            if price:
+                duplicate_usd += price
+        counts_added[card["id"]] += 1
+        existing[card["id"]] += 1
+        user["cards"].append({
+            "id": card["id"],
+            "name": card["name"],
+            "price_usd": price or 0,
+            "img_url": img_url,
+            "rarity": rarity,
+        })
+        if price and price > max_price:
+            max_price = price
+            max_name = card["name"]
+
+    duplicate_bc = usd_to_bc(duplicate_usd)
+    update_weekly_best(user, max_price, max_name)
+    all_sets = get_all_sets()
+    new_codes = []
+    if check_master_set(user, set_id, all_sets):
+        new_codes.append(f"master:{set_id}")
+
+    user["boosters_opened"] = user.get("boosters_opened", 0) + count
+    opened = user["boosters_opened"]
+    if opened >= 1 and grant_achievement(user, "first_booster"):
+        new_codes.append("first_booster")
+    if opened >= 5 and grant_achievement(user, "open_5_boosters"):
+        new_codes.append("open_5_boosters")
+    if opened >= 25 and grant_achievement(user, "open_25_boosters"):
+        new_codes.append("open_25_boosters")
+    if opened >= 100 and grant_achievement(user, "open_100_boosters"):
+        new_codes.append("open_100_boosters")
+    if opened >= 500 and grant_achievement(user, "open_500_boosters"):
+        new_codes.append("open_500_boosters")
+
+    total_cards = len(user["cards"])
+    if total_cards >= 1 and grant_achievement(user, "first_card"):
+        new_codes.append("first_card")
+    if total_cards >= 50 and grant_achievement(user, "cards_50"):
+        new_codes.append("cards_50")
+    if total_cards >= 250 and grant_achievement(user, "cards_250"):
+        new_codes.append("cards_250")
+    if total_cards >= 1000 and grant_achievement(user, "cards_1000"):
+        new_codes.append("cards_1000")
+    rare_ids = {c["id"] for c in user["cards"] if c.get("rarity") == "Rare"}
+    if len(rare_ids) >= 1 and grant_achievement(user, "first_rare"):
+        new_codes.append("first_rare")
+    if len(rare_ids) >= 10 and grant_achievement(user, "rare_10"):
+        new_codes.append("rare_10")
+    if len(rare_ids) >= 50 and grant_achievement(user, "rare_50"):
+        new_codes.append("rare_50")
+    counts_total = Counter(c["id"] for c in user["cards"])
+    if any(v >= 2 for v in counts_total.values()) and grant_achievement(user, "first_duplicate"):
+        new_codes.append("first_duplicate")
+    if any(v >= 10 for v in counts_total.values()) and grant_achievement(user, "duplicate_10"):
+        new_codes.append("duplicate_10")
+    if len([v for v in counts_total.values() if v >= 2]) >= 20 and grant_achievement(user, "duplicates_20_cards"):
+        new_codes.append("duplicates_20_cards")
+    set_ids = {c["id"].split("-")[0] for c in user["cards"]}
+    if len(set_ids) >= 1 and grant_achievement(user, "first_set"):
+        new_codes.append("first_set")
+    if len(set_ids) >= 5 and grant_achievement(user, "sets_5"):
+        new_codes.append("sets_5")
+    if len(set_ids) >= 10 and grant_achievement(user, "sets_10"):
+        new_codes.append("sets_10")
+    if len(set_ids) == len(all_sets) and grant_achievement(user, "sets_all"):
+        new_codes.append("sets_all")
+    if check_for_all_achievements(user) and grant_achievement(user, "all_achievements"):
+        new_codes.append("all_achievements")
+
+    save_users(users)
+    for code in new_codes:
+        await send_achievement_message(interaction, code)
+
+    drop_channel = None
+    if hasattr(interaction, "guild") and interaction.guild:
+        drop_channel = interaction.guild.get_channel(DROP_CHANNEL_ID)
+    best_card = max(all_cards, key=lambda c: card_price_usd(c) or 0)
+    best_price = card_price_usd(best_card) or 0
+    if drop_channel and best_price >= 50:
+        price_bc = usd_to_bc(best_price)
+        embed_drop = create_embed(
+            title="🔥 WYJĄTKOWY DROP!",
+            description=(
+                f"{interaction.user.mention} trafił/a **{best_card['name']}**\n"
+                f"`{best_card.get('set', {}).get('ptcgoCode', '-')}` | #{best_card.get('number', '-') }\n"
+                f"Wartość: {format_bc(price_bc)}"
+            ),
+            color=discord.Color.gold(),
+        )
+        if "images" in best_card and "large" in best_card["images"]:
+            embed_drop.set_image(url=best_card["images"]["large"])
+        await drop_channel.send(embed=embed_drop)
+
+    summary_lines = []
+    for cid, qty in counts_added.items():
+        info = summary_info[cid]
+        line = f"{info['emoji']} {info['name']} ({info['rarity']})"
+        if qty > 1:
+            line += f" x{qty}"
+        if qty > 1 or existing_before[cid] > 0:
+            line += " ♻️"
+        summary_lines.append(line)
+
+    summary = "\n".join(summary_lines)
+    total_usd = sum(card_price_usd(c) or 0 for c in all_cards)
     total_bc = usd_to_bc(total_usd)
-    best = max(cards, key=lambda c: card_price_usd(c) or 0)
-    img = best.get("images", {}).get("large") or best.get("images", {}).get("small")
+
+    top_sorted = sorted(all_cards, key=lambda c: card_price_usd(c) or 0, reverse=True)[:5]
+    top_lines = [
+        f"{idx+1}. {c['name']} - {(card_price_usd(c) or 0):.2f} USD"
+        for idx, c in enumerate(top_sorted)
+    ]
+    top_summary = "\n".join(top_lines)
+
+    img = best_card.get("images", {}).get("large") or best_card.get("images", {}).get("small")
     embed = None
     if img:
         embed = create_embed(title="Najlepsza karta", color=discord.Color.gold())
@@ -2121,9 +2271,11 @@ async def open_booster_quick(interaction, set_id):
 
     await interaction.edit_original_response(
         content=(
-            f"{random.choice(FUN_EMOJIS)} Koniec boostera! Oto Twoje karty:\n"
+            f"{random.choice(FUN_EMOJIS)} Koniec boosterów! Otworzono {count} sztuk.\n"
             f"```{summary}```\n"
-            f"💰 **Suma wartości boostera:** {total_usd:.2f} USD ({format_bc(total_bc)})"
+            f"Top 5 kart:\n```{top_summary}```\n"
+            f"💰 **Suma wartości:** {total_usd:.2f} USD ({format_bc(total_bc)})\n"
+            f"♻️ **Wartość duplikatów:** {format_bc(duplicate_bc)}"
         ),
         embed=embed,
         view=None,
