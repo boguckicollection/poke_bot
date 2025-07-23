@@ -2258,7 +2258,7 @@ async def open_booster_quick(interaction, set_id, *, count: int = 1):
 
     top_sorted = sorted(all_cards, key=lambda c: card_price_usd(c) or 0, reverse=True)[:5]
     top_lines = [
-        f"{idx+1}. {c['name']} - {(card_price_usd(c) or 0):.2f} USD"
+        f"{idx+1}. {c['name']} — {format_bc(usd_to_bc(card_price_usd(c) or 0))}"
         for idx, c in enumerate(top_sorted)
     ]
     top_summary = "\n".join(top_lines)
